@@ -56,7 +56,7 @@ class ParquetStore:
         else:
             raise ValueError("Cached results for the given query_string do not exist.")
 
-    def load(self, query_string: str) -> Tuple[pd.DataFrame]:
+    def load(self, query_string: str) -> Tuple[pd.DataFrame, dict]:
         return self.load_results(query_string), self.load_metadata(query_string)
 
     def dump_metadata(self, query_string: str, metadata: dict) -> None:
