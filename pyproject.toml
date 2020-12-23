@@ -6,6 +6,9 @@ authors = ["Felipe Aguirre Martinez <felipeam86@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+pandas = "^1.1.5"
+sqlalchemy = "^1.3.22"
+pyarrow = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
