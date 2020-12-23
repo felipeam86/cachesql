@@ -10,6 +10,30 @@ import pytest
 from sqlcache import sql, store
 
 
+def fake_results(query_string):
+    query_hash = store.hash_query(query_string)
+    return pd.DataFrame(
+        data=[[query_string, query_hash]], columns=["query_string", "query_hash"]
+    )
+
+
+@pytest.fixture
+def querydb():
+    func = Mock(side_effect=fake_results)
+    return func
+
+
+@pytest.fixture
+def db(querydb, tmp_path):
+    dbconnector = sql.DB(
+        name="dbtest",
+        uri="sqlite:///file:path/to/database?mode=ro&uri=true",
+        cache_store=tmp_path,
+    )
+    dbconnector._querydb = querydb
+    return dbconnector
+
+
 @pytest.fixture
 def query_string():
     return "select top 3 * from Receipts"
