@@ -23,6 +23,7 @@ cache:
 
 compile_requirements:
   extends: .restrictions
+  cache: {}
   stage: build
   script:
     - poetry export --without-hashes --dev -f requirements.txt -o requirements.txt
@@ -50,6 +51,7 @@ tests:
 
 black:
   extends: .restrictions
+  cache: {}
   stage: test
   needs: []
   script:
