@@ -21,12 +21,6 @@ cache:
     - merge_requests
 
 
-.deploy:
-  extends: .restrictions
-  image: ictu/sshpass
-  stage: deploy
-
-
 compile_requirements:
   extends: .restrictions
   stage: build
