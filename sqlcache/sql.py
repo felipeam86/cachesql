@@ -40,7 +40,7 @@ class DB:
         self.engine = create_engine(uri, convert_unicode=True)
 
     def querydb(
-        self, query_string, force: bool = False, cache: bool = True
+        self, query_string: str, force: bool = False, cache: bool = True
     ) -> pd.DataFrame:
 
         if self.store.exists(query_string) and not (force or not cache):
@@ -72,7 +72,7 @@ class DB:
 
         return results
 
-    def exists_in_cache(self, query_string) -> bool:
+    def exists_in_cache(self, query_string: str) -> bool:
         """Return True if a given query_string has cached results"""
         return self.store.exists(query_string)
 
