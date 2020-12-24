@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from sqlcache import __version__
 
 
 class TestDBConnector:
@@ -79,3 +78,19 @@ class TestDBConnector:
             "'querydb' should have been invoked again because of "
             "the bypass flag that ignores existing results on cache"
         )
+
+    def test_metadata(self, db, query_string):
+        # First call should call the function and dump results to cache
+        _ = db.querydb(query_string=query_string)
+        assert db.exists_in_cache(query_string)
+        assert (
+            db._querydb.call_count == 1
+        ), "'db._querydb' should have been invoked by the cache mechanism"
+
+        metadata = db.store.load_metadata(query_string)
+        assert metadata["db_name"] == db.name
+        assert metadata["sqlcache"] == __version__
+        assert metadata["username"] == db.engine.url.username or "unknown"
+        assert metadata["query_string"] == query_string
+        assert "executed_at" in metadata
+        assert "duration" in metadata

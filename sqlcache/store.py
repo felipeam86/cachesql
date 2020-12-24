@@ -61,6 +61,7 @@ class ParquetStore:
 
     def dump_metadata(self, query_string: str, metadata: dict) -> None:
         metadata["cache_file"] = self.get_cache_filepath(query_string).name
+        metadata["query_string"] = query_string
         metadata_file = self.get_metadata_filepath(query_string)
         metadata_file.write_text(json.dumps(metadata, indent=True))
 

@@ -64,7 +64,6 @@ class DB:
                     "db_name": self.name,
                     "sqlcache": __version__,
                     "username": self.engine.url.username or "unknown",
-                    "query_string": query_string,
                     "executed_at": executed_at,
                     "duration": duration,
                 }
