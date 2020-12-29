@@ -71,21 +71,20 @@ class DB:
             Results of the query
         """
 
+        logger.info(f"Querying {self.name!r}")
         if self.store.exists(query_string) and not (force or not cache):
-            logger.info(f"Loading results of {self.name}.querydb() call from cache.")
+            logger.info(f"Loading from cache.")
             results, metadata = self.store.load(query_string)
             logger.info(
-                f"Finished loading backup. "
-                f"The previous execution was done on the {metadata['executed_at']} "
+                f"The cached query was executed on the {metadata['executed_at']} "
                 f"and lasted {timedelta(seconds=metadata['duration'])}s"
             )
         else:
             executed_at = datetime.now().isoformat()
-            logger.info(f"Executing {self.name}.querydb()")
             start_time = time.time()
             results = self._querydb(query_string)
             duration = time.time() - start_time
-            logger.info(f"Finished execution in {timedelta(seconds=duration)}s")
+            logger.info(f"Finished in {timedelta(seconds=duration)}s")
 
             if cache:
                 metadata = {
@@ -96,7 +95,7 @@ class DB:
                     "duration": duration,
                 }
                 self.store.dump(query_string, results, metadata)
-                logger.info(f"Finished backup of results")
+                logger.info(f"Results have been stored in cache")
 
         self.session.add(query_string)
         return results
