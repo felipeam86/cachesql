@@ -50,6 +50,25 @@ class DB:
     def querydb(
         self, query_string: str, force: bool = False, cache: bool = True
     ) -> pd.DataFrame:
+        """Query the database with cache functionality
+
+        Parameters
+        ----------
+        query_string
+            Query string to be sent to the database
+        force
+            If True, ignore existing cache if any. Useful when you want to refresh data
+            on cache.
+        cache
+            If True, use cache mechanism. Otherwise, ignore existing cache and do not store
+            in cache the results. Useful when used in production. In many situations you
+            don't want to waist disk space with useless cache.
+
+        Returns
+        -------
+        pd.DataFrame
+            Results of the query
+        """
 
         if self.store.exists(query_string) and not (force or not cache):
             logger.info(f"Loading results of {self.name}.querydb() call from cache.")
