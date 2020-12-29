@@ -1,4 +1,4 @@
-from sqlcache import __version__, utils
+from sqlcache import __version__, sql, utils
 
 
 class TestDBConnector:
@@ -118,3 +118,63 @@ class TestDBConnector:
             "Results should have been loaded from cache"
         )
         assert df1.equals(df2)
+
+    def test_db_session(self, db):
+        """Test the cache fetches results from cache on a second call"""
+        queries = [
+            "select top 10 * from Receipts",
+            "select top 20 * from Receipts",
+            "select top 5 * from Receipts",
+            "select top 25 * from Receipts",
+        ]
+
+        # Do the first three queries and assert they exist in the session
+        for i in range(3):
+            _ = db.querydb(query_string=queries[i])
+            assert db.exists_in_cache(queries[i])
+            assert (
+                db._querydb.call_count == i + 1
+            ), "'querydb' should have been invoked by the cache mechanism"
+            assert (
+                queries[i] in db.session
+            ), "The query should have been stored on session"
+
+        # Call again the first query and assert it is not duplicated in the session
+        _ = db.querydb(query_string=queries[0])
+        assert db._querydb.call_count == 3
+        assert len(db.session) == 3
+        assert set(queries[:3]) == db.session
+
+    def test_export_import_session(self, tmp_path, querydb):
+        db1a = sql.DB(
+            name="db1a",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=tmp_path / "cache1",
+        )
+        db1a._querydb = querydb
+
+        db1b = sql.DB(
+            name="db1b",
+            uri="sqlite:///file:path/to/database1b?mode=ro&uri=true",
+            cache_store=tmp_path / "cache1",
+        )
+        db1b._querydb = querydb
+
+        db2 = sql.DB(
+            name="db2",
+            uri="sqlite:///file:path/to/database2?mode=ro&uri=true",
+            cache_store=tmp_path / "cache2",
+        )
+        db2._querydb = querydb
+
+        _ = db1a.querydb(query_string="select top 3 * from Receipts")
+        _ = db1b.querydb(query_string="select top 6 * from Receipts")
+
+        db1a.export_session(tmp_path / "cache.zip")
+        db2.store.import_cache(tmp_path / "cache.zip")
+
+        # cache2 should load only the query done by cache1a and not the query from cache1b.
+        assert db2.store.list().shape[0] == 1
+        assert db2.store.list().loc[0, "query_string"] == utils.normalize_query(
+            "select top 3 * from Receipts"
+        )
