@@ -1,76 +1,74 @@
 from unittest.mock import patch
 
 import pandas as pd
-import pytest
 
 from sqlcache import __version__, sql, store, utils
 
 
+def fake_read_sql(sql, con=None):
+    query_hash = store.hash_query(sql)
+    return pd.DataFrame(
+        data=[[sql, query_hash]], columns=["query_string", "query_hash"]
+    )
+
+
+@patch.object(sql.pd, "read_sql", side_effect=fake_read_sql)
 class TestDBConnector:
-    @patch("sqlcache.sql.pd")
-    def test__querydb(self, mock_pandas, query_string, tmp_path, read_sql):
-        mock_pandas.read_sql.side_effect = read_sql
-
-        db = sql.DB(
-            name="db",
-            uri="sqlite:///file:path/to/database?mode=ro&uri=true",
-            cache_store=tmp_path,
-        )
-
-        df = db.querydb(query_string)
+    def test__querydb(self, mock_read_sql, db, query_string):
+        df = db._querydb(query_string)
         assert isinstance(df, pd.DataFrame)
-        mock_pandas.read_sql.assert_called_once()
+        mock_read_sql.assert_called_once()
 
-    def test_load_results_from_cache(self, db, query_string):
+    def test_load_results_from_cache(self, mock_read_sql, db, query_string):
         """Test the cache fetches results from cache on a second call"""
 
         assert not db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 0
+            mock_read_sql.call_count == 0
         ), "'db._querydb' should not have been called up to this point"
 
         # First call should call the function and dump results to cache
         df1 = db.querydb(query_string=query_string)
         assert db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 1
+            mock_read_sql.call_count == 1
         ), "'db._querydb' should have been invoked by the cache mechanism"
 
         # Second call should load results from cache without calling the function
         df2 = db.querydb(query_string=query_string)
-        assert db._querydb.call_count == 1, (
+        assert mock_read_sql.call_count == 1, (
             "'db._querydb' should have not been been called any more. "
             "Results should have been loaded from cache"
         )
         assert df1.equals(df2)
 
-    def test_force_results_to_cache(self, db, query_string):
+    def test_force_results_to_cache(self, mock_read_sql, db, query_string):
         """Test the cache is refreshed with the force flag and a second function call"""
 
         assert not db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 0
+            mock_read_sql.call_count == 0
         ), "'db._querydb' should not have been called up to this point"
 
         # First call should call the function and dump results to cache
         _ = db.querydb(query_string=query_string)
         assert db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 1
+            mock_read_sql.call_count == 1
         ), "'db._querydb' should have been invoked by the cache mechanism"
 
         # Second call should call the function again and refresh results on cache
         _ = db.querydb(query_string=query_string, force=True)
         assert (
-            db._querydb.call_count == 2
+            mock_read_sql.call_count == 2
         ), "'db._querydb' should have been invoked again because of the use of force flag"
 
-    def test_bypass_cache(self, db, query_string):
+    def test_bypass_cache(self, mock_read_sql, db, query_string):
         """Test that bypassing the cache ignores previous calls and does not dump results"""
 
         assert not db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 0
+            mock_read_sql.call_count == 0
         ), "'db._querydb' should not have been called up to this point"
 
         # First call that should completely bypass the cache
@@ -79,7 +77,7 @@ class TestDBConnector:
             query_string
         ), "Nothing should have been dumped to cache because of the bypass flag"
         assert (
-            db._querydb.call_count == 1
+            mock_read_sql.call_count == 1
         ), "'querydb' should have been invoked by the cache mechanism"
 
         # Second call that should dump the results to cache
@@ -88,22 +86,22 @@ class TestDBConnector:
             query_string
         ), "This time, results should have been dumped to cache"
         assert (
-            db._querydb.call_count == 2
+            mock_read_sql.call_count == 2
         ), "'querydb' should have been invoked again because nothing was saved on cache on previous call"
 
         # Third call that should ignore the already existing dumped results
         _ = db.querydb(query_string=query_string, cache=False)
-        assert db._querydb.call_count == 3, (
+        assert mock_read_sql.call_count == 3, (
             "'querydb' should have been invoked again because of "
             "the bypass flag that ignores existing results on cache"
         )
 
-    def test_metadata(self, db, query_string):
+    def test_metadata(self, mock_read_sql, db, query_string):
         # First call should call the function and dump results to cache
         _ = db.querydb(query_string=query_string)
         assert db.exists_in_cache(query_string)
         assert (
-            db._querydb.call_count == 1
+            mock_read_sql.call_count == 1
         ), "'db._querydb' should have been invoked by the cache mechanism"
 
         metadata = db.store.load_metadata(query_string)
@@ -114,31 +112,31 @@ class TestDBConnector:
         assert "executed_at" in metadata
         assert "duration" in metadata
 
-    def test_querydb_independent_from_format(self, db):
+    def test_querydb_independent_from_format(self, mock_read_sql, db):
         query1 = "select top 3 * from receipts"
         query2 = "SELECT top 3 * FROM receipts"
 
         assert not db.exists_in_cache(query1)
         assert (
-            db._querydb.call_count == 0
+            mock_read_sql.call_count == 0
         ), "'db._querydb' should not have been called up to this point"
 
         df1 = db.querydb(query_string=query1)
         assert db.exists_in_cache(query1)
         assert db.exists_in_cache(query2)
         assert (
-            db._querydb.call_count == 1
+            mock_read_sql.call_count == 1
         ), "'db._querydb' should have been invoked by the cache mechanism"
 
         # Second call should load results from cache without calling the function
         df2 = db.querydb(query_string=query2)
-        assert db._querydb.call_count == 1, (
+        assert mock_read_sql.call_count == 1, (
             "'db._querydb' should have not been been called any more. "
             "Results should have been loaded from cache"
         )
         assert df1.equals(df2)
 
-    def test_db_session(self, db):
+    def test_db_session(self, mock_read_sql, db):
         """Test the cache fetches results from cache on a second call"""
         queries = [
             "select top 10 * from Receipts",
@@ -152,7 +150,7 @@ class TestDBConnector:
             _ = db.querydb(query_string=queries[i])
             assert db.exists_in_cache(queries[i])
             assert (
-                db._querydb.call_count == i + 1
+                mock_read_sql.call_count == i + 1
             ), "'querydb' should have been invoked by the cache mechanism"
             assert (
                 queries[i] in db.session
@@ -160,31 +158,28 @@ class TestDBConnector:
 
         # Call again the first query and assert it is not duplicated in the session
         _ = db.querydb(query_string=queries[0])
-        assert db._querydb.call_count == 3
+        assert mock_read_sql.call_count == 3
         assert len(db.session) == 3
         assert set(queries[:3]) == db.session
 
-    def test_export_import_session(self, tmp_path, querydb):
+    def test_export_import_session(self, mock_read_sql, tmp_path):
         db1a = sql.DB(
             name="db1a",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=tmp_path / "cache1",
         )
-        db1a._querydb = querydb
 
         db1b = sql.DB(
             name="db1b",
             uri="sqlite:///file:path/to/database1b?mode=ro&uri=true",
             cache_store=tmp_path / "cache1",
         )
-        db1b._querydb = querydb
 
         db2 = sql.DB(
             name="db2",
             uri="sqlite:///file:path/to/database2?mode=ro&uri=true",
             cache_store=tmp_path / "cache2",
         )
-        db2._querydb = querydb
 
         _ = db1a.querydb(query_string="select top 3 * from Receipts")
         _ = db1b.querydb(query_string="select top 6 * from Receipts")

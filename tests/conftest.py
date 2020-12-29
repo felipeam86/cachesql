@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -10,40 +9,13 @@ import pytest
 from sqlcache import sql, store
 
 
-def fake_results(query_string):
-    query_hash = store.hash_query(query_string)
-    return pd.DataFrame(
-        data=[[query_string, query_hash]], columns=["query_string", "query_hash"]
-    )
-
-
-def fake_read_sql(sql, con=None):
-    query_hash = store.hash_query(sql)
-    return pd.DataFrame(
-        data=[[sql, query_hash]], columns=["query_string", "query_hash"]
-    )
-
-
 @pytest.fixture
-def read_sql():
-    func = Mock(side_effect=fake_read_sql)
-    return func
-
-
-@pytest.fixture
-def querydb():
-    func = Mock(side_effect=fake_results)
-    return func
-
-
-@pytest.fixture
-def db(querydb, tmp_path):
+def db(tmp_path):
     dbconnector = sql.DB(
         name="dbtest",
         uri="sqlite:///file:path/to/database?mode=ro&uri=true",
         cache_store=tmp_path,
     )
-    dbconnector._querydb = querydb
     return dbconnector
 
 
