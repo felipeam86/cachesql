@@ -1,5 +1,5 @@
 import logging
-from functools import lru_cache, wraps
+from functools import lru_cache
 
 import sqlparse
 
