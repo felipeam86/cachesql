@@ -1,7 +1,26 @@
-from sqlcache import __version__, sql, utils
+from unittest.mock import patch
+
+import pandas as pd
+import pytest
+
+from sqlcache import __version__, sql, store, utils
 
 
 class TestDBConnector:
+    @patch("sqlcache.sql.pd")
+    def test__querydb(self, mock_pandas, query_string, tmp_path, read_sql):
+        mock_pandas.read_sql.side_effect = read_sql
+
+        db = sql.DB(
+            name="db",
+            uri="sqlite:///file:path/to/database?mode=ro&uri=true",
+            cache_store=tmp_path,
+        )
+
+        df = db.querydb(query_string)
+        assert isinstance(df, pd.DataFrame)
+        mock_pandas.read_sql.assert_called_once()
+
     def test_load_results_from_cache(self, db, query_string):
         """Test the cache fetches results from cache on a second call"""
 

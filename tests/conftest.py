@@ -17,6 +17,19 @@ def fake_results(query_string):
     )
 
 
+def fake_read_sql(sql, con=None):
+    query_hash = store.hash_query(sql)
+    return pd.DataFrame(
+        data=[[sql, query_hash]], columns=["query_string", "query_hash"]
+    )
+
+
+@pytest.fixture
+def read_sql():
+    func = Mock(side_effect=fake_read_sql)
+    return func
+
+
 @pytest.fixture
 def querydb():
     func = Mock(side_effect=fake_results)
