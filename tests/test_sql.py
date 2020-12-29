@@ -1,6 +1,4 @@
-from sqlcache import __version__
-
-from sqlcache import utils
+from sqlcache import __version__, utils
 
 
 class TestDBConnector:
