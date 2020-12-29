@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
@@ -192,3 +194,14 @@ class TestDBConnector:
         assert db2.store.list().loc[0, "query_string"] == utils.normalize_query(
             "select top 3 * from Receipts"
         )
+
+    def test_default_cache_location(self, mock_read_sql, tmp_path):
+        previous_wd = os.getcwd()
+
+        os.chdir(tmp_path)
+        db = sql.DB(
+            name="db",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+        )
+        assert db.store.cache_store == Path(tmp_path) / ".cache" / db.name
+        os.chdir(previous_wd)

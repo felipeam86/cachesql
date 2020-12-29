@@ -36,10 +36,11 @@ class DB:
 
     name: str
     uri: InitVar[str]
-    cache_store: InitVar[Union[str, Path]] = Path(__file__).parent / ".cache"
+    cache_store: InitVar[Union[str, Path]] = None
     normalize: InitVar[bool] = True
 
     def __post_init__(self, uri, cache_store, normalize) -> None:
+        cache_store = cache_store or Path(".cache").absolute()
         self.store = ParquetStore(
             cache_store=Path(cache_store) / self.name,
             normalize=normalize,
