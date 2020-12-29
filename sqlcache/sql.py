@@ -29,14 +29,20 @@ class DB:
         URI string passed to SQLalchemy to connect to the database
     cache_store
         Path where cache should be stored
+    normalize
+        If True, normalize the queries to make the cache independent from formatting changes
     """
 
     name: str
     uri: InitVar[str]
     cache_store: InitVar[Union[str, Path]] = Path(__file__).parent / ".cache"
+    normalize: InitVar[bool] = True
 
-    def __post_init__(self, uri, cache_store) -> None:
-        self.store = ParquetStore(cache_store=Path(cache_store) / self.name)
+    def __post_init__(self, uri, cache_store, normalize) -> None:
+        self.store = ParquetStore(
+            cache_store=Path(cache_store) / self.name,
+            normalize=normalize,
+        )
         self.engine = create_engine(uri, convert_unicode=True)
 
     def querydb(

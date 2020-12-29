@@ -1,5 +1,7 @@
 from sqlcache import __version__
 
+from sqlcache import utils
+
 
 class TestDBConnector:
     def test_load_results_from_cache(self, db, query_string):
@@ -91,6 +93,30 @@ class TestDBConnector:
         assert metadata["db_name"] == db.name
         assert metadata["sqlcache"] == __version__
         assert metadata["username"] == db.engine.url.username or "unknown"
-        assert metadata["query_string"] == query_string
+        assert metadata["query_string"] == utils.normalize_query(query_string)
         assert "executed_at" in metadata
         assert "duration" in metadata
+
+    def test_querydb_independent_from_format(self, db):
+        query1 = "select top 3 * from receipts"
+        query2 = "SELECT top 3 * FROM receipts"
+
+        assert not db.exists_in_cache(query1)
+        assert (
+            db._querydb.call_count == 0
+        ), "'db._querydb' should not have been called up to this point"
+
+        df1 = db.querydb(query_string=query1)
+        assert db.exists_in_cache(query1)
+        assert db.exists_in_cache(query2)
+        assert (
+            db._querydb.call_count == 1
+        ), "'db._querydb' should have been invoked by the cache mechanism"
+
+        # Second call should load results from cache without calling the function
+        df2 = db.querydb(query_string=query2)
+        assert db._querydb.call_count == 1, (
+            "'db._querydb' should have not been been called any more. "
+            "Results should have been loaded from cache"
+        )
+        assert df1.equals(df2)

@@ -1,6 +1,6 @@
 import pytest
 
-from sqlcache import store
+from sqlcache import store, utils
 
 
 class TestParquetStore:
@@ -23,6 +23,9 @@ class TestParquetStore:
         assert parquet_store.get_metadata_filepath(query_string).exists()
         metadata_loaded = parquet_store.load_metadata(query_string)
         assert metadata == metadata_loaded
+
+        assert metadata_loaded["query_string"] != query_string
+        assert metadata_loaded["query_string"] == utils.normalize_query(query_string)
 
         with pytest.raises(ValueError) as excinfo:
             parquet_store.load_metadata("select * from dummy")
@@ -94,7 +97,9 @@ class TestParquetStore:
             store_content.loc[0, "cache_file"]
             == parquet_store.get_cache_filepath(query_string).name
         )
-        assert store_content.loc[0, "query_string"] == query_string
+        assert store_content.loc[0, "query_string"] == utils.normalize_query(
+            query_string
+        )
 
     def test_export_import_cache(self, tmp_path, query_string, metadata, results):
         cache_store1 = tmp_path / "cache1"
@@ -110,3 +115,34 @@ class TestParquetStore:
         store2.import_cache(cache_export_file)
 
         assert store1.list().equals(store2.list())
+
+    def test_cache_independent_from_format(self, tmp_path, metadata, results):
+        query1 = "select top 3 * from receipts"
+        query2 = "SELECT top 3 * FROM receipts"
+
+        assert utils.normalize_query(query1) == utils.normalize_query(query2)
+
+        parquet_store = store.ParquetStore(cache_store=tmp_path, normalize=True)
+
+        for query in (query1, query2):
+            assert not parquet_store.get_metadata_filepath(query).exists()
+            assert not parquet_store.get_cache_filepath(query).exists()
+            assert not parquet_store.exists(query)
+
+        parquet_store.dump(query1, results, metadata)
+
+        for query in (query1, query2):
+            assert parquet_store.get_metadata_filepath(query).exists()
+            assert parquet_store.get_cache_filepath(query).exists()
+            assert parquet_store.exists(query)
+
+
+class TestHashQuery:
+    def test_hash_query(self, query_string):
+        assert (
+            store.hash_query(query_string) == "26689adeaee8e1b156ad49334ee522dd89bd9142"
+        )
+
+        assert store.hash_query(query_string) != store.hash_query(
+            query_string, normalize=True
+        )

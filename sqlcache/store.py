@@ -6,8 +6,13 @@ from zipfile import ZipFile
 
 import pandas as pd
 
+from .utils import normalize_query
 
-def hash_query(query_string: str) -> str:
+
+def hash_query(query_string: str, normalize: bool = False) -> str:
+    if normalize:
+        query_string = normalize_query(query_string)
+
     return hashlib.sha1(query_string.encode()).hexdigest()
 
 
@@ -18,11 +23,14 @@ class ParquetStore:
     ----------
     cache_store
         Location where the returned values are cached.
+    normalize
+        If True, normalize the queries to make the cache independent from formatting changes
     """
 
-    def __init__(self, cache_store: Path) -> None:
+    def __init__(self, cache_store: Path, normalize: bool = False) -> None:
         self.cache_store = Path(cache_store).expanduser()
         self.cache_store.mkdir(parents=True, exist_ok=True)
+        self.normalize = normalize
 
     def exists(self, query_string: str) -> bool:
         """Returns True if the results of the given query exist in cache"""
@@ -32,12 +40,12 @@ class ParquetStore:
 
     def get_metadata_filepath(self, query_string: str) -> Path:
         """Return the metadata filepath corresponding to that query_string"""
-        arg_hash = hash_query(query_string)
+        arg_hash = hash_query(query_string, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".json")
 
     def get_cache_filepath(self, query_string: str) -> Path:
         """Return the cached results filepath corresponding to that query_string"""
-        arg_hash = hash_query(query_string)
+        arg_hash = hash_query(query_string, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".parquet")
 
     def load_metadata(self, query_string: str) -> dict:
@@ -61,7 +69,9 @@ class ParquetStore:
 
     def dump_metadata(self, query_string: str, metadata: dict) -> None:
         metadata["cache_file"] = self.get_cache_filepath(query_string).name
-        metadata["query_string"] = query_string
+        metadata["query_string"] = (
+            normalize_query(query_string) if self.normalize else query_string
+        )
         metadata_file = self.get_metadata_filepath(query_string)
         metadata_file.write_text(json.dumps(metadata, indent=True))
 

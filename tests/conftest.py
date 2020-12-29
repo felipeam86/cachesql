@@ -42,7 +42,7 @@ def query_string():
 @pytest.fixture
 def metadata():
     return {
-        "query_string": "select top 3 * from Receipts",
+        "query_string": "SELECT top 3 *\nFROM Receipts",
         "cache_file": "cache_file.parquet",
         "executed_at": datetime.now().isoformat(),
         "duration": 600,
@@ -56,4 +56,4 @@ def results():
 
 @pytest.fixture
 def parquet_store(tmp_path):
-    return store.ParquetStore(cache_store=tmp_path)
+    return store.ParquetStore(cache_store=tmp_path, normalize=True)
