@@ -205,3 +205,34 @@ class TestDBConnector:
         )
         assert db.store.cache_store == Path(tmp_path) / ".cache" / db.name
         os.chdir(previous_wd)
+
+    def test_log(self, mock_read_sql, tmp_path, query_string, caplog):
+        db_verbose = sql.DB(
+            name="db_verbose",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=tmp_path,
+        )
+        import logging
+
+        # Make sure the library doesn't log anything by default
+        _ = db_verbose.querydb(query_string, cache=False)
+        assert len(caplog.records) == 0
+        assert caplog.text == ""
+
+        # Make sure that the library logs messages when configuration is set
+        with caplog.at_level(logging.INFO):
+            _ = db_verbose.querydb(query_string)
+            assert len(caplog.records) == 3
+
+            assert "Querying 'db_verbose'" in caplog.text
+            assert "Finished in" in caplog.text
+            assert "Results have been stored in cache" in caplog.text
+
+            caplog.clear()
+
+            _ = db_verbose.querydb(query_string)
+            assert len(caplog.records) == 3
+
+            assert "Querying 'db_verbose'" in caplog.text
+            assert "Loading from cache." in caplog.text
+            assert "The cached query was executed on the" in caplog.text
