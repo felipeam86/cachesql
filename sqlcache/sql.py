@@ -14,7 +14,7 @@ from .store import ParquetStore
 logger = logging.getLogger(__name__)
 
 
-class DB:
+class Database:
     """Database connector with caching functionality
 
     Generic class to connect to SQL databases. When querying DBs the results will
@@ -48,7 +48,7 @@ class DB:
         self.engine = create_engine(uri, convert_unicode=True)
         self.session = set()
 
-    def querydb(
+    def query(
         self, query_string: str, force: bool = False, cache: bool = True
     ) -> pd.DataFrame:
         """Query the database with cache functionality
@@ -82,7 +82,7 @@ class DB:
         else:
             executed_at = datetime.now().isoformat()
             start_time = time.time()
-            results = self._querydb(query_string)
+            results = self._query(query_string)
             duration = time.time() - start_time
             logger.info(f"Finished in {timedelta(seconds=duration)}s")
 
@@ -100,12 +100,12 @@ class DB:
         self.session.add(query_string)
         return results
 
+    def _query(self, query_string: str) -> pd.DataFrame:
+        return pd.read_sql(sql=query_string, con=self.engine)
+
     def exists_in_cache(self, query_string: str) -> bool:
         """Return True if a given query_string has cached results"""
         return self.store.exists(query_string)
-
-    def _querydb(self, query_string: str) -> pd.DataFrame:
-        return pd.read_sql(sql=query_string, con=self.engine)
 
     def export_session(self, filename: Union[str, Path]) -> None:
         """Export contents of cache obtained during this session to a zip file

@@ -11,7 +11,7 @@ from sqlcache import sql, store
 
 @pytest.fixture
 def db(tmp_path):
-    dbconnector = sql.DB(
+    dbconnector = sql.Database(
         name="dbtest",
         uri="sqlite:///file:path/to/database?mode=ro&uri=true",
         cache_store=tmp_path,
