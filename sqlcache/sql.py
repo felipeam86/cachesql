@@ -1,6 +1,5 @@
 import logging
 import time
-from dataclasses import InitVar, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union
@@ -15,7 +14,6 @@ from .store import ParquetStore
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class DB:
     """Database connector with caching functionality
 
@@ -34,15 +32,17 @@ class DB:
         If True, normalize the queries to make the cache independent from formatting changes
     """
 
-    name: str
-    uri: InitVar[str]
-    cache_store: InitVar[Union[str, Path]] = None
-    normalize: InitVar[bool] = True
-
-    def __post_init__(self, uri, cache_store, normalize) -> None:
-        cache_store = cache_store or Path(".cache").absolute()
+    def __init__(
+        self,
+        name: str,
+        uri: str,
+        cache_store: Union[str, Path] = None,
+        normalize: bool = True,
+    ):
+        self.name = name
+        cache_store = Path(cache_store or ".cache").absolute() / self.name
         self.store = ParquetStore(
-            cache_store=Path(cache_store) / self.name,
+            cache_store=Path(cache_store),
             normalize=normalize,
         )
         self.engine = create_engine(uri, convert_unicode=True)
