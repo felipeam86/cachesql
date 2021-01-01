@@ -100,7 +100,7 @@ class TestDBConnector:
         assert db.exists_in_cache(query_string)
         assert mock_read_sql.call_count == 1, "'pd.read_sql' should have been invoked"
 
-        metadata = db.store.load_metadata(query_string)
+        metadata = db.cache.load_metadata(query_string)
         assert metadata["db_name"] == db.name
         assert metadata["sqlcache"] == __version__
         assert metadata["username"] == db.engine.url.username or "unknown"
@@ -179,11 +179,11 @@ class TestDBConnector:
         _ = db1b.query(query_string="select top 6 * from Receipts")
 
         db1a.export_session(tmp_path / "cache.zip")
-        db2.store.import_cache(tmp_path / "cache.zip")
+        db2.cache.import_cache(tmp_path / "cache.zip")
 
         # cache2 should load only the query done by cache1a and not the query from cache1b.
-        assert db2.store.list().shape[0] == 1
-        assert db2.store.list().loc[0, "query_string"] == utils.normalize_query(
+        assert db2.cache.list().shape[0] == 1
+        assert db2.cache.list().loc[0, "query_string"] == utils.normalize_query(
             "select top 3 * from Receipts"
         )
 
@@ -195,7 +195,7 @@ class TestDBConnector:
             name="db",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
         )
-        assert db.store.cache_store == Path(tmp_path) / ".cache" / db.name
+        assert db.cache.cache_store == Path(tmp_path) / ".cache" / db.name
         os.chdir(previous_wd)
 
     def test_log(self, mock_read_sql, tmp_path, query_string, caplog):

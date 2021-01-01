@@ -41,7 +41,7 @@ class Database:
     ):
         self.name = name
         cache_store = Path(cache_store or ".cache").absolute() / self.name
-        self.store = ParquetStore(
+        self.cache = ParquetStore(
             cache_store=Path(cache_store),
             normalize=normalize,
         )
@@ -72,9 +72,9 @@ class Database:
         """
 
         logger.info(f"Querying {self.name!r}")
-        if self.store.exists(query_string) and not (force or not cache):
+        if self.cache.exists(query_string) and not (force or not cache):
             logger.info(f"Loading from cache.")
-            results, metadata = self.store.load(query_string)
+            results, metadata = self.cache.load(query_string)
             logger.info(
                 f"The cached query was executed on the {metadata['executed_at']} "
                 f"and lasted {timedelta(seconds=metadata['duration'])}s"
@@ -94,7 +94,7 @@ class Database:
                     "executed_at": executed_at,
                     "duration": duration,
                 }
-                self.store.dump(query_string, results, metadata)
+                self.cache.dump(query_string, results, metadata)
                 logger.info(f"Results have been stored in cache")
 
         self.session.add(query_string)
@@ -105,7 +105,7 @@ class Database:
 
     def exists_in_cache(self, query_string: str) -> bool:
         """Return True if a given query_string has cached results"""
-        return self.store.exists(query_string)
+        return self.cache.exists(query_string)
 
     def export_session(self, filename: Union[str, Path]) -> None:
         """Export contents of cache obtained during this session to a zip file
@@ -125,7 +125,7 @@ class Database:
         filename = filename.with_suffix(".zip") if filename.suffix == "" else filename
         with ZipFile(filename, "w") as myzip:
             for query in self.session:
-                cache_file = self.store.get_cache_filepath(query)
-                metadata_file = self.store.get_metadata_filepath(query)
+                cache_file = self.cache.get_cache_filepath(query)
+                metadata_file = self.cache.get_metadata_filepath(query)
                 myzip.write(str(cache_file), arcname=Path(cache_file).name)
                 myzip.write(str(metadata_file), arcname=Path(metadata_file).name)
