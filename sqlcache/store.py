@@ -1,7 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Tuple, Union, Iterable
 from zipfile import ZipFile
 
 import pandas as pd
@@ -101,7 +101,7 @@ class ParquetStore:
 
         return pd.DataFrame(cache_list)
 
-    def export(self, filename: Union[str, Path]) -> None:
+    def export(self, filename: Union[str, Path], queries: Iterable = None) -> None:
         """Export contents of cache to a zip file
 
         Used in conjunction with the :py:meth:`Cache.import_cache <Cache.import_cache>` method,
@@ -111,20 +111,20 @@ class ParquetStore:
 
         Parameters
         ----------
-        filename : Union[str, Path]
+        filename
             Path to a zip file where cache will be exported
+        queries
+            List of queries to be exported (Optional). If None, all cache contents will
+            be exported.
         """
 
+        queries = queries or self.list().query_string
         filename = Path(filename)
         filename = filename.with_suffix(".zip") if filename.suffix == "" else filename
-        cache = self.list()
-        normalized_cache_files = cache.cache_file.map(
-            lambda p: self.cache_store / Path(p).name
-        )
         with ZipFile(filename, "w") as myzip:
-            for cache_file in normalized_cache_files:
-                cache_file = self.cache_store / cache_file.name
-                metadata_file = cache_file.with_suffix(".json")
+            for query in queries:
+                cache_file = self.get_cache_filepath(query)
+                metadata_file = self.get_metadata_filepath(query)
                 myzip.write(str(cache_file), arcname=Path(cache_file).name)
                 myzip.write(str(metadata_file), arcname=Path(metadata_file).name)
 

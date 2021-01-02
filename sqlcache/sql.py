@@ -120,12 +120,4 @@ class Database:
         filename
             Path to a zip file where cache will be exported
         """
-
-        filename = Path(filename)
-        filename = filename.with_suffix(".zip") if filename.suffix == "" else filename
-        with ZipFile(filename, "w") as myzip:
-            for query in self.session:
-                cache_file = self.cache.get_cache_filepath(query)
-                metadata_file = self.cache.get_metadata_filepath(query)
-                myzip.write(str(cache_file), arcname=Path(cache_file).name)
-                myzip.write(str(metadata_file), arcname=Path(metadata_file).name)
+        self.cache.export(filename=filename, queries=self.session)

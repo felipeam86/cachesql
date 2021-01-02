@@ -116,6 +116,32 @@ class TestParquetStore:
 
         assert store1.list().equals(store2.list())
 
+    def test_export_import_cache_with_queries_list(self, tmp_path, query_string, metadata, results):
+        queries = [
+            "select top 10 * from Receipts",
+            "select top 20 * from Receipts",
+            "select top 5 * from Receipts",
+            "select top 25 * from Receipts",
+        ]
+
+        cache_store1 = tmp_path / "cache1"
+        cache_store2 = tmp_path / "cache2"
+        cache_export_file = tmp_path / "cache.zip"
+
+        store1 = store.ParquetStore(cache_store=cache_store1)
+        store2 = store.ParquetStore(cache_store=cache_store2)
+        for query in queries:
+            store1.dump(query, results, metadata)
+
+        store1.export(cache_export_file, queries=queries[:2])
+        store2.import_cache(cache_export_file)
+
+        store1_cache = store1.list()
+        store2_cache = store2.list()
+        assert store1_cache.shape[0] == 4
+        assert store2_cache.shape[0] == 2
+        assert set(store2_cache.query_string) == set(queries[:2])
+
     def test_cache_independent_from_format(self, tmp_path, metadata, results):
         query1 = "select top 3 * from receipts"
         query2 = "SELECT top 3 * FROM receipts"
