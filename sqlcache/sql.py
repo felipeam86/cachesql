@@ -9,7 +9,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 from . import __version__
-from .store import ParquetStore
+from .store import BaseStore, ParquetStore
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class Database:
     uri
         URI string passed to SQLalchemy to connect to the database
     cache_store
-        Path where cache should be stored
+        Path where cache should be stored or instance of derived class of BaseStore
     normalize
         If True, normalize the queries to make the cache independent from formatting changes
     """
@@ -36,15 +36,19 @@ class Database:
         self,
         name: str,
         uri: str,
-        cache_store: Union[str, Path] = None,
+        cache_store: Union[str, Path, BaseStore] = None,
         normalize: bool = True,
     ):
         self.name = name
-        cache_store = Path(cache_store or ".cache").absolute() / self.name
-        self.cache = ParquetStore(
-            cache_store=Path(cache_store),
-            normalize=normalize,
-        )
+        if (cache_store is None) or isinstance(cache_store, (str, Path)):
+            cache_store = Path(cache_store or ".cache").absolute() / self.name
+            self.cache = ParquetStore(
+                cache_store=Path(cache_store),
+                normalize=normalize,
+            )
+        elif isinstance(cache_store, BaseStore):
+            self.cache = cache_store
+
         self.engine = create_engine(uri, convert_unicode=True)
         self.session = set()
 

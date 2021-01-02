@@ -16,7 +16,11 @@ def hash_query(query: str, normalize: bool = False) -> str:
     return hashlib.sha1(query.encode()).hexdigest()
 
 
-class ParquetStore:
+class BaseStore:
+    pass
+
+
+class ParquetStore(BaseStore):
     """Disk store that stores to parquet files
 
     Parameters

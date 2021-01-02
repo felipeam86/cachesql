@@ -19,6 +19,44 @@ class TestDBConnector:
         assert isinstance(df, pd.DataFrame)
         mock_read_sql.assert_called_once()
 
+    def test_instantiate_with_cache_store_as_str(self, mock_read_sql):
+        db = sql.Database(
+            name="str_as_cache",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store="/tmp",
+        )
+        assert db.cache.cache_store == Path("/tmp/str_as_cache")
+
+    def test_instantiate_with_cache_store_as_path(self, mock_read_sql, tmp_path):
+        db = sql.Database(
+            name="path_as_cache",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=tmp_path,
+        )
+        assert db.cache.cache_store == tmp_path / "path_as_cache"
+
+    def test_instantiate_with_cache_store_as_none(self, mock_read_sql, tmp_path):
+        previous_wd = os.getcwd()
+
+        os.chdir(tmp_path)
+        db = sql.Database(
+            name="none_as_cache",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=None,
+        )
+        assert db.cache.cache_store == tmp_path / ".cache" / "none_as_cache"
+        os.chdir(previous_wd)
+
+    def test_instantiate_with_cache_store_as_base_store(self, mock_read_sql, tmp_path):
+        parquet_store = store.ParquetStore(cache_store=tmp_path)
+        db = sql.Database(
+            name="none_as_cache",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=parquet_store,
+        )
+        assert db.cache == parquet_store
+        assert db.cache.cache_store == tmp_path
+
     def test_load_results_from_cache(self, mock_read_sql, db, query):
         """Test the cache fetches results from cache on a second call"""
 
