@@ -1,6 +1,6 @@
 import pytest
 
-from sqlcache import store, utils
+from cachesql import store, utils
 
 
 class TestParquetStore:

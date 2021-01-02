@@ -6,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from sqlcache import sql, store
+from cachesql import sql, store
 
 
 @pytest.fixture

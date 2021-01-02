@@ -42,7 +42,7 @@ tests:
   before_script:
     - pip install -r requirements.txt
   script:
-    - py.test --cov-report term-missing --cov=sqlcache tests/
+    - py.test --cov-report term-missing --cov=cachesql tests/
     - coverage xml -o cobertura-coverage.xml
   artifacts:
     reports:

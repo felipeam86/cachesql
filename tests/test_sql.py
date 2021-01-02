@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from sqlcache import __version__, sql, store, utils
+from cachesql import __version__, sql, store, utils
 
 
 def fake_read_sql(sql, con=None):
@@ -138,7 +138,7 @@ class TestDBConnector:
 
         metadata = db.cache.load_metadata(query)
         assert metadata["db_name"] == db.name
-        assert metadata["sqlcache"] == __version__
+        assert metadata["cachesql"] == __version__
         assert metadata["username"] == db.engine.url.username or "unknown"
         assert metadata["query"] == utils.normalize_query(query)
         assert "executed_at" in metadata

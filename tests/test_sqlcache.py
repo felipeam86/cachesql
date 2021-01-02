@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from sqlcache import Database, __version__
+from cachesql import Database, __version__
 
 
 def test_version():
@@ -8,9 +8,9 @@ def test_version():
 
 
 def test_load_results_from_cache(query, tmp_path):
-    """Test Database can be imported from sqlcache"""
+    """Test Database can be imported from cachesql"""
 
-    with patch("sqlcache.Database._query") as mock_query:
+    with patch("cachesql.Database._query") as mock_query:
         db = Database(
             name="db",
             uri="sqlite:///file:path/to/database1b?mode=ro&uri=true",

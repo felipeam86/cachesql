@@ -93,7 +93,7 @@ class Database:
             if cache:
                 metadata = {
                     "db_name": self.name,
-                    "sqlcache": __version__,
+                    "cachesql": __version__,
                     "username": self.engine.url.username or "unknown",
                     "executed_at": executed_at,
                     "duration": duration,
