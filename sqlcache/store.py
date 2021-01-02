@@ -1,7 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import Tuple, Union, Iterable
+from typing import Iterable, Tuple, Union
 from zipfile import ZipFile
 
 import pandas as pd
@@ -9,11 +9,11 @@ import pandas as pd
 from .utils import normalize_query
 
 
-def hash_query(query_string: str, normalize: bool = False) -> str:
+def hash_query(query: str, normalize: bool = False) -> str:
     if normalize:
-        query_string = normalize_query(query_string)
+        query = normalize_query(query)
 
-    return hashlib.sha1(query_string.encode()).hexdigest()
+    return hashlib.sha1(query.encode()).hexdigest()
 
 
 class ParquetStore:
@@ -32,56 +32,54 @@ class ParquetStore:
         self.cache_store.mkdir(parents=True, exist_ok=True)
         self.normalize = normalize
 
-    def exists(self, query_string: str) -> bool:
+    def exists(self, query: str) -> bool:
         """Returns True if the results of the given query exist in cache"""
-        metadata_file = self.get_metadata_filepath(query_string)
-        cache_file = self.get_cache_filepath(query_string)
+        metadata_file = self.get_metadata_filepath(query)
+        cache_file = self.get_cache_filepath(query)
         return metadata_file.exists() and cache_file.exists()
 
-    def get_metadata_filepath(self, query_string: str) -> Path:
-        """Return the metadata filepath corresponding to that query_string"""
-        arg_hash = hash_query(query_string, normalize=self.normalize)
+    def get_metadata_filepath(self, query: str) -> Path:
+        """Return the metadata filepath corresponding to that query"""
+        arg_hash = hash_query(query, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".json")
 
-    def get_cache_filepath(self, query_string: str) -> Path:
-        """Return the cached results filepath corresponding to that query_string"""
-        arg_hash = hash_query(query_string, normalize=self.normalize)
+    def get_cache_filepath(self, query: str) -> Path:
+        """Return the cached results filepath corresponding to that query"""
+        arg_hash = hash_query(query, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".parquet")
 
-    def load_metadata(self, query_string: str) -> dict:
-        """Load metadata of cached results for query_strings if it exists in cache"""
-        metadata_file = self.get_metadata_filepath(query_string)
+    def load_metadata(self, query: str) -> dict:
+        """Load metadata of cached results for query if it exists in cache"""
+        metadata_file = self.get_metadata_filepath(query)
         if metadata_file.exists():
             return json.loads(metadata_file.read_text())
         else:
-            raise ValueError("Metadata for the given query_string does not exist.")
+            raise ValueError("Metadata for the given query does not exist.")
 
-    def load_results(self, query_string: str) -> pd.DataFrame:
-        """Load cached results for query_strings if it exists in cache"""
-        cache_file = self.get_cache_filepath(query_string)
+    def load_results(self, query: str) -> pd.DataFrame:
+        """Load cached results for query if it exists in cache"""
+        cache_file = self.get_cache_filepath(query)
         if cache_file.exists():
             return pd.read_parquet(cache_file)
         else:
-            raise ValueError("Cached results for the given query_string do not exist.")
+            raise ValueError("Cached results for the given query do not exist.")
 
-    def load(self, query_string: str) -> Tuple[pd.DataFrame, dict]:
-        return self.load_results(query_string), self.load_metadata(query_string)
+    def load(self, query: str) -> Tuple[pd.DataFrame, dict]:
+        return self.load_results(query), self.load_metadata(query)
 
-    def dump_metadata(self, query_string: str, metadata: dict) -> None:
-        metadata["cache_file"] = self.get_cache_filepath(query_string).name
-        metadata["query_string"] = (
-            normalize_query(query_string) if self.normalize else query_string
-        )
-        metadata_file = self.get_metadata_filepath(query_string)
+    def dump_metadata(self, query: str, metadata: dict) -> None:
+        metadata["cache_file"] = self.get_cache_filepath(query).name
+        metadata["query"] = normalize_query(query) if self.normalize else query
+        metadata_file = self.get_metadata_filepath(query)
         metadata_file.write_text(json.dumps(metadata, indent=True))
 
-    def dump_results(self, query_string: str, results: pd.DataFrame) -> None:
-        cache_file = self.get_cache_filepath(query_string)
+    def dump_results(self, query: str, results: pd.DataFrame) -> None:
+        cache_file = self.get_cache_filepath(query)
         results.to_parquet(cache_file)
 
-    def dump(self, query_string: str, results: pd.DataFrame, metadata: dict) -> None:
-        self.dump_results(query_string, results)
-        self.dump_metadata(query_string, metadata)
+    def dump(self, query: str, results: pd.DataFrame, metadata: dict) -> None:
+        self.dump_results(query, results)
+        self.dump_metadata(query, metadata)
 
     def list(self) -> pd.DataFrame:
         """List cached function calls with some useful metadata"""
@@ -92,7 +90,7 @@ class ParquetStore:
 
         if len(cache_list) == 0:
             default_metadata = [
-                "query_string",
+                "query",
                 "cache_file",
                 "executed_at",
                 "duration",
@@ -118,7 +116,7 @@ class ParquetStore:
             be exported.
         """
 
-        queries = queries or self.list().query_string
+        queries = queries or self.list().loc[:, "query"]
         filename = Path(filename)
         filename = filename.with_suffix(".zip") if filename.suffix == "" else filename
         with ZipFile(filename, "w") as myzip:

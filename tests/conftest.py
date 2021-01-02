@@ -20,14 +20,14 @@ def db(tmp_path):
 
 
 @pytest.fixture
-def query_string():
+def query():
     return "select top 3 * from Receipts"
 
 
 @pytest.fixture
 def metadata():
     return {
-        "query_string": "SELECT top 3 *\nFROM Receipts",
+        "query": "SELECT top 3 *\nFROM Receipts",
         "cache_file": "cache_file.parquet",
         "executed_at": datetime.now().isoformat(),
         "duration": 600,

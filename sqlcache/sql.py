@@ -49,13 +49,13 @@ class Database:
         self.session = set()
 
     def query(
-        self, query_string: str, force: bool = False, cache: bool = True
+        self, query: str, force: bool = False, cache: bool = True
     ) -> pd.DataFrame:
         """Query the database with cache functionality
 
         Parameters
         ----------
-        query_string
+        query
             Query string to be sent to the database
         force
             If True, ignore existing cache if any. Useful when you want to refresh data
@@ -72,9 +72,9 @@ class Database:
         """
 
         logger.info(f"Querying {self.name!r}")
-        if self.cache.exists(query_string) and not (force or not cache):
+        if self.cache.exists(query) and not (force or not cache):
             logger.info(f"Loading from cache.")
-            results, metadata = self.cache.load(query_string)
+            results, metadata = self.cache.load(query)
             logger.info(
                 f"The cached query was executed on the {metadata['executed_at']} "
                 f"and lasted {timedelta(seconds=metadata['duration'])}s"
@@ -82,7 +82,7 @@ class Database:
         else:
             executed_at = datetime.now().isoformat()
             start_time = time.time()
-            results = self._query(query_string)
+            results = self._query(query)
             duration = time.time() - start_time
             logger.info(f"Finished in {timedelta(seconds=duration)}s")
 
@@ -94,18 +94,18 @@ class Database:
                     "executed_at": executed_at,
                     "duration": duration,
                 }
-                self.cache.dump(query_string, results, metadata)
+                self.cache.dump(query, results, metadata)
                 logger.info(f"Results have been stored in cache")
 
-        self.session.add(query_string)
+        self.session.add(query)
         return results
 
-    def _query(self, query_string: str) -> pd.DataFrame:
-        return pd.read_sql(sql=query_string, con=self.engine)
+    def _query(self, query: str) -> pd.DataFrame:
+        return pd.read_sql(sql=query, con=self.engine)
 
-    def exists_in_cache(self, query_string: str) -> bool:
-        """Return True if a given query_string has cached results"""
-        return self.cache.exists(query_string)
+    def exists_in_cache(self, query: str) -> bool:
+        """Return True if a given query has cached results"""
+        return self.cache.exists(query)
 
     def export_session(self, filename: Union[str, Path]) -> None:
         """Export contents of cache obtained during this session to a zip file
