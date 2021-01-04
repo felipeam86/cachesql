@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1024)
 def normalize_query(query: str, max_length=40000) -> str:
-    """Normalize query format with sqlparse
+    """Normalize query format with sqlparse.
 
     This function normalize the format of a given query by:
 

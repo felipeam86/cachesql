@@ -10,6 +10,7 @@ from .utils import normalize_query
 
 
 def hash_query(query: str, normalize: bool = False) -> str:
+    """Return the hash of a query. Normalized or not."""
     if normalize:
         query = normalize_query(query)
 
@@ -21,7 +22,7 @@ class BaseStore:
 
 
 class ParquetStore(BaseStore):
-    """Disk store that stores to parquet files
+    """Disk store based on parquet files.
 
     Parameters
     ----------
@@ -37,23 +38,23 @@ class ParquetStore(BaseStore):
         self.normalize = normalize
 
     def exists(self, query: str) -> bool:
-        """Returns True if the results of the given query exist in cache"""
+        """Return True if the results of the given query exist in cache."""
         metadata_file = self.get_metadata_filepath(query)
         cache_file = self.get_cache_filepath(query)
         return metadata_file.exists() and cache_file.exists()
 
     def get_metadata_filepath(self, query: str) -> Path:
-        """Return the metadata filepath corresponding to that query"""
+        """Return the metadata filepath corresponding to that query."""
         arg_hash = hash_query(query, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".json")
 
     def get_cache_filepath(self, query: str) -> Path:
-        """Return the cached results filepath corresponding to that query"""
+        """Return the cached results filepath corresponding to that query."""
         arg_hash = hash_query(query, normalize=self.normalize)
         return self.cache_store / (arg_hash + ".parquet")
 
     def load_metadata(self, query: str) -> dict:
-        """Load metadata of cached results for query if it exists in cache"""
+        """Load metadata of cached results for query if it exists in cache."""
         metadata_file = self.get_metadata_filepath(query)
         if metadata_file.exists():
             return json.loads(metadata_file.read_text())
@@ -61,7 +62,7 @@ class ParquetStore(BaseStore):
             raise ValueError("Metadata for the given query does not exist.")
 
     def load_results(self, query: str) -> pd.DataFrame:
-        """Load cached results for query if it exists in cache"""
+        """Load cached results for query if it exists in cache."""
         cache_file = self.get_cache_filepath(query)
         if cache_file.exists():
             return pd.read_parquet(cache_file)
@@ -69,24 +70,28 @@ class ParquetStore(BaseStore):
             raise ValueError("Cached results for the given query do not exist.")
 
     def load(self, query: str) -> Tuple[pd.DataFrame, dict]:
+        """Load results and metadata for a query if they exist in cache."""
         return self.load_results(query), self.load_metadata(query)
 
     def dump_metadata(self, query: str, metadata: dict) -> None:
+        """Dump metadata of query results to cache."""
         metadata["cache_file"] = self.get_cache_filepath(query).name
         metadata["query"] = normalize_query(query) if self.normalize else query
         metadata_file = self.get_metadata_filepath(query)
         metadata_file.write_text(json.dumps(metadata, indent=True))
 
     def dump_results(self, query: str, results: pd.DataFrame) -> None:
+        """Dump query results to cache."""
         cache_file = self.get_cache_filepath(query)
         results.to_parquet(cache_file)
 
     def dump(self, query: str, results: pd.DataFrame, metadata: dict) -> None:
+        """Dump results and metadata for given query to cache."""
         self.dump_results(query, results)
         self.dump_metadata(query, metadata)
 
     def list(self) -> pd.DataFrame:
-        """List cached function calls with some useful metadata"""
+        """List cached function calls with some useful metadata."""
         # List everything first
         cache_list = [
             json.loads(f.read_text()) for f in self.cache_store.glob("*.json")
@@ -104,7 +109,7 @@ class ParquetStore(BaseStore):
         return pd.DataFrame(cache_list)
 
     def export(self, filename: Union[str, Path], queries: Iterable = None) -> None:
-        """Export contents of cache to a zip file
+        """Export contents of cache to a zip file.
 
         Used in conjunction with the :py:meth:`Cache.import_cache <Cache.import_cache>` method,
         you can share your cache with your colleagues in order to guarantee reproducibility of
@@ -119,7 +124,6 @@ class ParquetStore(BaseStore):
             List of queries to be exported (Optional). If None, all cache contents will
             be exported.
         """
-
         queries = queries or self.list().loc[:, "query"]
         filename = Path(filename)
         filename = filename.with_suffix(".zip") if filename.suffix == "" else filename
@@ -131,7 +135,7 @@ class ParquetStore(BaseStore):
                 myzip.write(str(metadata_file), arcname=Path(metadata_file).name)
 
     def import_cache(self, filename: Union[str, Path]) -> None:
-        """Import contents to cache
+        """Import contents to cache.
 
         Used in conjunction with the :py:meth:`Cache.export <Cache.export>` method,
         you can share your cache with your colleagues in order to guarantee reproducibility of

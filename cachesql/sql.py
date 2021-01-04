@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class Database:
-    """Database connector with caching functionality
+    """Database connector with caching functionality.
 
     Generic class to connect to SQL databases. When querying DBs the results will
     be cached on a disk to speed up the next time the same query is done.
@@ -56,7 +56,7 @@ class Database:
     def query(
         self, query: str, force: bool = False, cache: bool = True
     ) -> pd.DataFrame:
-        """Query the database with cache functionality
+        """Query the database with cache functionality.
 
         Parameters
         ----------
@@ -75,7 +75,6 @@ class Database:
         pd.DataFrame
             Results of the query
         """
-
         logger.info(f"Querying {self.name!r}")
         if self.cache.exists(query) and not (force or not cache):
             logger.info(f"Loading from cache.")
@@ -109,11 +108,11 @@ class Database:
         return pd.read_sql(sql=query, con=self.engine)
 
     def exists_in_cache(self, query: str) -> bool:
-        """Return True if a given query has cached results"""
+        """Return True if a given query has cached results."""
         return self.cache.exists(query)
 
     def export_session(self, filename: Union[str, Path]) -> None:
-        """Export contents of cache obtained during this session to a zip file
+        """Export contents of cache obtained during this session to a zip file.
 
         Used in conjunction with the :py:meth:`Store.import_cache <Store.import_cache>` method,
         you can share the cache of one specific coding session with your colleagues in order to
