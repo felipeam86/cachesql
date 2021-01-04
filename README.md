@@ -1,10 +1,35 @@
-# Cachesql: Fast, resilient and reproducible data analysis with cached SQL queries
+# CacheSQL: Fast, resilient and reproducible data analysis with cached SQL queries
 
 [![Package version](https://img.shields.io/pypi/v/cachesql.svg)](https://pypi.org/project/cachesql) [![Coverage Status](https://coveralls.io/repos/github/felipeam86/cachesql/badge.svg)](https://coveralls.io/github/felipeam86/cachesql) [![Build Status](https://travis-ci.com/felipeam86/cachesql.svg?branch=develop)](https://travis-ci.com/felipeam86/cachesql)
 
-## The basics
-Run your queries once, get them from cache the next time!
+CacheSQL is a simple library for making SQL queries with cache functionality. The main target of this library are
+data scientists and data analysts that rely on [SQLalchemy](https://pypi.org/project/SQLAlchemy/) to query data from SQL
+and [pandas](https://pypi.org/project/pandas/) to do the heavy lifting in Python.
 
+The key features are:
+
+- **Speed up development cycles**: Run your queries the first time against the database, get it from cache the next times.
+  You no longer need to wait for your queries anymore.
+- **Resilience**: If you loose access to the databases, you can rely on your cached results to run your code.
+- **Reproducibility**: By freezing the state of your queries results in cache, you guarantee reproducibility of your code.
+- **Simplify collaboration**: By sharing the state of your cache with colleagues, you can guarantee they will get the
+  same results as you.
+- **Your development code is your production code**: When ready to launch your code in production, simply turn off the
+  cache functionality!
+- **Reduce the load on production DBs**: By using the cache, you reduce the number of times you query the DBs.
+- **Fast, efficient and reliable cache**: This comes from the usage of the parquet format through
+  [pyarrow](https://pypi.org/project/pyarrow/).
+- **Simpler code**: No more added complexity on your code to load backups from disk or run the query if no backup exists.
+
+## The basics
+Install with pip
+
+```bash
+pip install cachesql
+```
+
+
+Run your queries once, get them from cache the next time!
 
 ```python
 >>> from cachesql import Database
