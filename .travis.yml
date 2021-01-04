@@ -12,6 +12,6 @@ before_install:
 install:
   - poetry install
 script:
-  - poetry run pytest --cov-report term-missing --cov=garpy tests/
+  - poetry run pytest --cov-report term-missing --cov=cachesql tests/
 after_success:
   - coveralls
