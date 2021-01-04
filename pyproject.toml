@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "cachesql"
 version = "0.1.0"
-description = "Speed up your data analysis iterations with cached SQL queries"
+description = "Fast, resilient and reproducible data analysis with cached SQL queries"
 authors = ["Felipe Aguirre Martinez <felipeam86@gmail.com>"]
 homepage = "https://github.com/felipeam86/cachesql"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
