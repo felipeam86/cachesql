@@ -39,7 +39,7 @@ class Database:
         cache_store: Union[str, Path, BaseStore] = None,
         normalize: bool = True,
     ):
-        self.engine = create_engine(uri, convert_unicode=True)
+        self.engine = create_engine(uri)
         self.name = name or self.engine.url.database or "unnameddb"
 
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
