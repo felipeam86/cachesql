@@ -181,7 +181,7 @@ $ python report.py --no-cache
 
 ## Acknowledgements
 This package was proudly developed at the [Rwanda Revenue Authority](https://www.rra.gov.rw/) which
-kindly agreed to let me open source it. The internal version has been serving a team of 7 data
-scientists for 2 years already. It has been a pilar of our infrastructure to guarantee fast development
+kindly agreed to let me open source it. The internal version has been serving a growing team of data
+scientists since 2018. It has been a pilar of our infrastructure to guarantee fast development
 cycles, resilient workflow to infrastructure issues, reproducibility of our analysis and simplified
 collaboration by sharing cache state among colleagues.
