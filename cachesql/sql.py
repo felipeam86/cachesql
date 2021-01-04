@@ -3,7 +3,6 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union
-from zipfile import ZipFile
 
 import pandas as pd
 from sqlalchemy import create_engine
