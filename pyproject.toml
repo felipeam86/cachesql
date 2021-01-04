@@ -1,14 +1,23 @@
 [tool.poetry]
-name = "sqlcache"
+name = "cachesql"
 version = "0.1.0"
-description = "Speed up your data analysis iterations with cached SQL queries"
+description = "Fast, resilient and reproducible data analysis with cached SQL queries"
 authors = ["Felipe Aguirre Martinez <felipeam86@gmail.com>"]
+homepage = "https://github.com/felipeam86/cachesql"
+readme = "README.md"
+license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.6.1"
+pandas = "^1.0.0"
+sqlalchemy = "^1.3.22"
+pyarrow = "^2.0.0"
+sqlparse = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+pytest-cov = "^2.10.1"
+coveralls = "^2.2.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
