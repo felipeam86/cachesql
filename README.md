@@ -51,7 +51,7 @@ INFO:cachesql.sql:The cached query was executed on the 2021-01-03T20:06:21.40155
 ```
 
 Phew... that was fast! Although I know that there's new data on the DB, I want fresh data! -->
-Use the `force=True`flag:
+Use the `force=True` flag:
 
 ```python
 >>> df = db.query(expensive_query, force=True) #  <--- force=True will tell cachesql to refresh the cache.
