@@ -5,6 +5,7 @@ description = "Fast, resilient and reproducible data analysis with cached SQL qu
 authors = ["Felipe Aguirre Martinez <felipeam86@gmail.com>"]
 homepage = "https://github.com/felipeam86/cachesql"
 readme = "README.md"
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
