@@ -21,10 +21,11 @@ class Database:
 
     Parameters
     ----------
-    name
-        Name of the database.
     uri
         URI string passed to SQLalchemy to connect to the database
+    name
+        Name of the database used as namespace for the cache and mentioned on log messages.
+        If None, it will try to infer a name from the uri, otherwise it'll be set to unnameddb
     cache_store
         Path where cache should be stored or instance of derived class of BaseStore
     normalize
@@ -33,12 +34,14 @@ class Database:
 
     def __init__(
         self,
-        name: str,
         uri: str,
+        name: str = None,
         cache_store: Union[str, Path, BaseStore] = None,
         normalize: bool = True,
     ):
-        self.name = name
+        self.engine = create_engine(uri, convert_unicode=True)
+        self.name = name or self.engine.url.database or "unnameddb"
+
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
             cache_store = Path(cache_store or ".cache").absolute() / self.name
             self.cache = ParquetStore(
@@ -48,7 +51,6 @@ class Database:
         elif isinstance(cache_store, BaseStore):
             self.cache = cache_store
 
-        self.engine = create_engine(uri, convert_unicode=True)
         self.session = set()
 
     def query(

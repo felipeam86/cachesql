@@ -19,6 +19,14 @@ class TestDBConnector:
         assert isinstance(df, pd.DataFrame)
         mock_read_sql.assert_called_once()
 
+    def test_instantiate_without_name(self, mock_read_sql):
+        db = sql.Database(
+            uri="sqlite:///database?mode=ro&uri=true",
+            cache_store="/tmp",
+        )
+        assert db.name == "database"
+        assert db.cache.cache_store == Path("/tmp/database")
+
     def test_instantiate_with_cache_store_as_str(self, mock_read_sql):
         db = sql.Database(
             name="str_as_cache",
