@@ -1,6 +1,23 @@
+from uuid import uuid1
+
+import pandas as pd
 import pytest
 
 from cachesql import store, utils
+
+
+class TestFileStore:
+    def test_get_cache_filepath(self, file_store, query):
+        with pytest.raises(NotImplementedError):
+            file_store.get_cache_filepath(query)
+
+    def test_load_results(self, file_store, query):
+        with pytest.raises(NotImplementedError):
+            file_store.load_results(query)
+
+    def test_dump_results(self, file_store, query, results):
+        with pytest.raises(NotImplementedError):
+            file_store.dump_results(query, results)
 
 
 class TestParquetStore:
@@ -15,8 +32,8 @@ class TestParquetStore:
         cache_file = s.get_cache_filepath(query)
         assert metadata_file.stem == store.hash_query(query)
         assert cache_file.stem == store.hash_query(query)
-        assert metadata_file == tmp_path / (store.hash_query(query) + ".json")
-        assert cache_file == tmp_path / (store.hash_query(query) + ".parquet")
+        assert metadata_file == tmp_path / s.fmt / (store.hash_query(query) + ".json")
+        assert cache_file == tmp_path / s.fmt / (store.hash_query(query) + ".parquet")
 
     def test_dump_load_metadata(self, parquet_store, query, metadata):
         parquet_store.dump_metadata(query, metadata)
@@ -153,6 +170,34 @@ class TestParquetStore:
             assert parquet_store.get_metadata_filepath(query).exists()
             assert parquet_store.get_cache_filepath(query).exists()
             assert parquet_store.exists(query)
+
+    def test_invalid_arrow_type(self, parquet_store, query):
+        results = pd.Series([uuid1() for i in range(3)], name="uuid_col").to_frame()
+        with pytest.raises(ValueError) as excinfo:
+            parquet_store.dump_results(query, results)
+        assert "Database(uri='...', store_backend='joblib')" in str(excinfo.value)
+
+
+class TestJoblibStore:
+    def test_get_filepaths(self, tmp_path, query):
+        """Test the metadata and results cache file"""
+        s = store.JoblibStore(cache_store=tmp_path)
+        metadata_file = s.get_metadata_filepath(query)
+        cache_file = s.get_cache_filepath(query)
+        assert metadata_file.stem == store.hash_query(query)
+        assert cache_file.stem == store.hash_query(query)
+        assert metadata_file == tmp_path / s.fmt / (store.hash_query(query) + ".json")
+        assert cache_file == tmp_path / s.fmt / (store.hash_query(query) + ".joblib")
+
+    def test_dump_load_results(self, joblib_store, query, results):
+        joblib_store.dump_results(query, results)
+        assert joblib_store.get_cache_filepath(query).exists()
+        results_loaded = joblib_store.load_results(query)
+        assert results.equals(results_loaded)
+
+        with pytest.raises(ValueError) as excinfo:
+            joblib_store.load_results("select * from dummy")
+        assert f"Cached results for the given query do not exist." in str(excinfo.value)
 
 
 class TestHashQuery:

@@ -7,8 +7,7 @@ from typing import Union
 import pandas as pd
 from sqlalchemy import create_engine
 
-from . import __version__
-from .store import BaseStore, ParquetStore
+from . import __version__, store
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,10 @@ class Database:
         Name of the database used as namespace for the cache and mentioned on log messages.
         If None, it will try to infer a name from the uri, otherwise it'll be set to unnameddb
     cache_store
-        Path where cache should be stored or instance of derived class of BaseStore
+        Path where cache should be stored or instance of derived class of store.BaseStore
+    store_backend : {'parquet', 'joblib'}
+        When cache_store is a str or Path, a FileStore is used for the cache. This parameter
+        determines if it uses 'parquet' or 'joblib as backend
     normalize
         If True, normalize the queries to make the cache independent from formatting changes
     """
@@ -36,7 +38,8 @@ class Database:
         self,
         uri: str,
         name: str = None,
-        cache_store: Union[str, Path, BaseStore] = None,
+        cache_store: Union[str, Path, store.BaseStore] = None,
+        store_backend: str = "parquet",
         normalize: bool = True,
     ):
         self.engine = create_engine(uri)
@@ -44,11 +47,21 @@ class Database:
 
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
             cache_store = Path(cache_store or ".cache").absolute() / self.name
-            self.cache = ParquetStore(
-                cache_store=Path(cache_store),
-                normalize=normalize,
-            )
-        elif isinstance(cache_store, BaseStore):
+            if store_backend == "parquet":
+                self.cache = store.ParquetStore(
+                    cache_store=Path(cache_store),
+                    normalize=normalize,
+                )
+            elif store_backend == "joblib":
+                self.cache = store.JoblibStore(
+                    cache_store=Path(cache_store),
+                    normalize=normalize,
+                )
+            else:
+                raise ValueError(
+                    f"store_backend={store_backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
+                )
+        elif isinstance(cache_store, store.BaseStore):
             self.cache = cache_store
 
         self.session = set()

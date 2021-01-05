@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from cachesql import __version__, sql, store, utils
 
@@ -25,7 +26,7 @@ class TestDBConnector:
             cache_store="/tmp",
         )
         assert db.name == "database"
-        assert db.cache.cache_store == Path("/tmp/database")
+        assert db.cache.cache_store == Path("/tmp/database") / db.cache.fmt
 
     def test_instantiate_with_cache_store_as_str(self, mock_read_sql):
         db = sql.Database(
@@ -33,7 +34,8 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store="/tmp",
         )
-        assert db.cache.cache_store == Path("/tmp/str_as_cache")
+        assert db.cache.cache_store == Path("/tmp/str_as_cache") / db.cache.fmt
+        assert isinstance(db.cache, store.ParquetStore)
 
     def test_instantiate_with_cache_store_as_path(self, mock_read_sql, tmp_path):
         db = sql.Database(
@@ -41,7 +43,8 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=tmp_path,
         )
-        assert db.cache.cache_store == tmp_path / "path_as_cache"
+        assert db.cache.cache_store == tmp_path / "path_as_cache" / db.cache.fmt
+        assert isinstance(db.cache, store.ParquetStore)
 
     def test_instantiate_with_cache_store_as_none(self, mock_read_sql, tmp_path):
         previous_wd = os.getcwd()
@@ -52,18 +55,63 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=None,
         )
-        assert db.cache.cache_store == tmp_path / ".cache" / "none_as_cache"
+        assert (
+            db.cache.cache_store == tmp_path / ".cache" / "none_as_cache" / db.cache.fmt
+        )
+        assert isinstance(db.cache, store.ParquetStore)
         os.chdir(previous_wd)
 
-    def test_instantiate_with_cache_store_as_base_store(self, mock_read_sql, tmp_path):
+    def test_instantiate_with_store_backend_joblib(self, mock_read_sql, tmp_path):
+        previous_wd = os.getcwd()
+
+        os.chdir(tmp_path)
+        db = sql.Database(
+            name="store_backend_joblib",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=None,
+            store_backend="joblib",
+        )
+        assert (
+            db.cache.cache_store
+            == tmp_path / ".cache" / "store_backend_joblib" / db.cache.fmt
+        )
+        assert isinstance(db.cache, store.JoblibStore)
+        os.chdir(previous_wd)
+
+    def test_instantiate_with_store_backend_wrong(self, mock_read_sql, tmp_path):
+
+        with pytest.raises(ValueError) as excinfo:
+            _ = sql.Database(
+                name="store_backend_wrong",
+                uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+                cache_store=None,
+                store_backend="wrong",
+            )
+        assert "store_backend='wrong' is invalid" in str(excinfo.value)
+
+    def test_instantiate_with_cache_store_as_parquet_store(
+        self, mock_read_sql, tmp_path
+    ):
         parquet_store = store.ParquetStore(cache_store=tmp_path)
         db = sql.Database(
-            name="none_as_cache",
+            name="parquet_store",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=parquet_store,
         )
         assert db.cache == parquet_store
-        assert db.cache.cache_store == tmp_path
+        assert db.cache.cache_store == tmp_path / db.cache.fmt
+
+    def test_instantiate_with_cache_store_as_joblib_store(
+        self, mock_read_sql, tmp_path
+    ):
+        joblib_store = store.JoblibStore(cache_store=tmp_path)
+        db = sql.Database(
+            name="joblib_store",
+            uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
+            cache_store=joblib_store,
+        )
+        assert db.cache == joblib_store
+        assert db.cache.cache_store == tmp_path / db.cache.fmt
 
     def test_load_results_from_cache(self, mock_read_sql, db, query):
         """Test the cache fetches results from cache on a second call"""
@@ -239,7 +287,9 @@ class TestDBConnector:
             name="db",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
         )
-        assert db.cache.cache_store == Path(tmp_path) / ".cache" / db.name
+        assert (
+            db.cache.cache_store == Path(tmp_path) / ".cache" / db.name / db.cache.fmt
+        )
         os.chdir(previous_wd)
 
     def test_log(self, mock_read_sql, tmp_path, query, caplog):
