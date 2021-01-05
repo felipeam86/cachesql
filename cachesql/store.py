@@ -4,10 +4,9 @@ from pathlib import Path
 from typing import Iterable, Tuple, Union
 from zipfile import ZipFile
 
-import joblib
 import pandas as pd
-import pyarrow as pa
 
+from . import serializer
 from .utils import normalize_query
 
 
@@ -34,10 +33,20 @@ class FileStore(BaseStore):
         If True, normalize the queries to make the cache independent from formatting changes
     """
 
-    fmt = ""
+    _serializers = {
+        "parquet": serializer.ParquetSerializer,
+        "joblib": serializer.JoblibSerializer,
+    }
 
-    def __init__(self, cache_store: Path, normalize: bool = False) -> None:
-        self.cache_store = Path(cache_store).expanduser() / self.fmt
+    def __init__(
+        self, cache_store: Path, backend: str = "parquet", normalize: bool = False
+    ) -> None:
+        if backend not in self._serializers:
+            raise ValueError(
+                f"store_backend={backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
+            )
+        self.serializer = self._serializers[backend]
+        self.cache_store = Path(cache_store).expanduser() / self.serializer.fmt
         self.cache_store.mkdir(parents=True, exist_ok=True)
         self.normalize = normalize
 
@@ -54,7 +63,8 @@ class FileStore(BaseStore):
 
     def get_cache_filepath(self, query: str) -> Path:
         """Return the cached results filepath corresponding to that query."""
-        raise NotImplementedError
+        arg_hash = hash_query(query, normalize=self.normalize)
+        return self.cache_store / (arg_hash + self.serializer.extension)
 
     def load_metadata(self, query: str) -> dict:
         """Load metadata of cached results for query if it exists in cache."""
@@ -66,7 +76,11 @@ class FileStore(BaseStore):
 
     def load_results(self, query: str) -> pd.DataFrame:
         """Load cached results for query if it exists in cache."""
-        raise NotImplementedError
+        cache_file = self.get_cache_filepath(query)
+        if cache_file.exists():
+            return self.serializer.load(cache_file)
+        else:
+            raise ValueError("Cached results for the given query do not exist.")
 
     def load(self, query: str) -> Tuple[pd.DataFrame, dict]:
         """Load results and metadata for a query if they exist in cache."""
@@ -81,7 +95,8 @@ class FileStore(BaseStore):
 
     def dump_results(self, query: str, results: pd.DataFrame) -> None:
         """Dump query results to cache."""
-        raise NotImplementedError
+        cache_file = self.get_cache_filepath(query)
+        self.serializer.dump(results, cache_file)
 
     def dump(self, query: str, results: pd.DataFrame, metadata: dict) -> None:
         """Dump results and metadata for given query to cache."""
@@ -147,74 +162,3 @@ class FileStore(BaseStore):
         """
         with ZipFile(filename, "r") as myzip:
             myzip.extractall(path=self.cache_store)
-
-
-class ParquetStore(FileStore):
-    """Disk store based on parquet files.
-
-    Parameters
-    ----------
-    cache_store
-        Location where the returned values are cached.
-    normalize
-        If True, normalize the queries to make the cache independent from formatting changes
-    """
-
-    fmt = "parquet"
-
-    def get_cache_filepath(self, query: str) -> Path:
-        """Return the cached results filepath corresponding to that query."""
-        arg_hash = hash_query(query, normalize=self.normalize)
-        return self.cache_store / (arg_hash + ".parquet")
-
-    def load_results(self, query: str) -> pd.DataFrame:
-        """Load cached results for query if it exists in cache."""
-        cache_file = self.get_cache_filepath(query)
-        if cache_file.exists():
-            return pd.read_parquet(cache_file)
-        else:
-            raise ValueError("Cached results for the given query do not exist.")
-
-    def dump_results(self, query: str, results: pd.DataFrame) -> None:
-        """Dump query results to cache."""
-        cache_file = self.get_cache_filepath(query)
-        try:
-            results.to_parquet(cache_file)
-        except pa.ArrowInvalid as e:
-            raise ValueError(
-                "It seems that your query is returning a column with a type not "
-                "yet supported by Arrow. Consider using 'joblib' instead: "
-                "Database(uri='...', store_backend='joblib')"
-            )
-
-
-class JoblibStore(FileStore):
-    """Disk store based on joblib.
-
-    Parameters
-    ----------
-    cache_store
-        Location where the returned values are cached.
-    normalize
-        If True, normalize the queries to make the cache independent from formatting changes
-    """
-
-    fmt = "joblib"
-
-    def get_cache_filepath(self, query: str) -> Path:
-        """Return the cached results filepath corresponding to that query."""
-        arg_hash = hash_query(query, normalize=self.normalize)
-        return self.cache_store / (arg_hash + ".joblib")
-
-    def load_results(self, query: str) -> pd.DataFrame:
-        """Load cached results for query if it exists in cache."""
-        cache_file = self.get_cache_filepath(query)
-        if cache_file.exists():
-            return joblib.load(cache_file)
-        else:
-            raise ValueError("Cached results for the given query do not exist.")
-
-    def dump_results(self, query: str, results: pd.DataFrame) -> None:
-        """Dump query results to cache."""
-        cache_file = self.get_cache_filepath(query)
-        joblib.dump(results, cache_file)

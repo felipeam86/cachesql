@@ -47,20 +47,12 @@ class Database:
 
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
             cache_store = Path(cache_store or ".cache").absolute() / self.name
-            if store_backend == "parquet":
-                self.cache = store.ParquetStore(
-                    cache_store=Path(cache_store),
-                    normalize=normalize,
-                )
-            elif store_backend == "joblib":
-                self.cache = store.JoblibStore(
-                    cache_store=Path(cache_store),
-                    normalize=normalize,
-                )
-            else:
-                raise ValueError(
-                    f"store_backend={store_backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
-                )
+            self.cache = store.FileStore(
+                cache_store=Path(cache_store),
+                backend=store_backend,
+                normalize=normalize,
+            )
+
         elif isinstance(cache_store, store.BaseStore):
             self.cache = cache_store
 

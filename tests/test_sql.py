@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from cachesql import __version__, sql, store, utils
+from cachesql import __version__, serializer, sql, store, utils
 
 
 def fake_read_sql(sql, con=None):
@@ -26,7 +26,7 @@ class TestDBConnector:
             cache_store="/tmp",
         )
         assert db.name == "database"
-        assert db.cache.cache_store == Path("/tmp/database") / db.cache.fmt
+        assert db.cache.cache_store == Path("/tmp/database") / db.cache.serializer.fmt
 
     def test_instantiate_with_cache_store_as_str(self, mock_read_sql):
         db = sql.Database(
@@ -34,8 +34,10 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store="/tmp",
         )
-        assert db.cache.cache_store == Path("/tmp/str_as_cache") / db.cache.fmt
-        assert isinstance(db.cache, store.ParquetStore)
+        assert (
+            db.cache.cache_store == Path("/tmp/str_as_cache") / db.cache.serializer.fmt
+        )
+        assert db.cache.serializer == serializer.ParquetSerializer
 
     def test_instantiate_with_cache_store_as_path(self, mock_read_sql, tmp_path):
         db = sql.Database(
@@ -43,8 +45,10 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=tmp_path,
         )
-        assert db.cache.cache_store == tmp_path / "path_as_cache" / db.cache.fmt
-        assert isinstance(db.cache, store.ParquetStore)
+        assert (
+            db.cache.cache_store == tmp_path / "path_as_cache" / db.cache.serializer.fmt
+        )
+        assert db.cache.serializer == serializer.ParquetSerializer
 
     def test_instantiate_with_cache_store_as_none(self, mock_read_sql, tmp_path):
         previous_wd = os.getcwd()
@@ -56,9 +60,10 @@ class TestDBConnector:
             cache_store=None,
         )
         assert (
-            db.cache.cache_store == tmp_path / ".cache" / "none_as_cache" / db.cache.fmt
+            db.cache.cache_store
+            == tmp_path / ".cache" / "none_as_cache" / db.cache.serializer.fmt
         )
-        assert isinstance(db.cache, store.ParquetStore)
+        assert db.cache.serializer == serializer.ParquetSerializer
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_joblib(self, mock_read_sql, tmp_path):
@@ -73,9 +78,9 @@ class TestDBConnector:
         )
         assert (
             db.cache.cache_store
-            == tmp_path / ".cache" / "store_backend_joblib" / db.cache.fmt
+            == tmp_path / ".cache" / "store_backend_joblib" / db.cache.serializer.fmt
         )
-        assert isinstance(db.cache, store.JoblibStore)
+        assert db.cache.serializer == serializer.JoblibSerializer
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_wrong(self, mock_read_sql, tmp_path):
@@ -92,26 +97,28 @@ class TestDBConnector:
     def test_instantiate_with_cache_store_as_parquet_store(
         self, mock_read_sql, tmp_path
     ):
-        parquet_store = store.ParquetStore(cache_store=tmp_path)
+        parquet_store = store.FileStore(cache_store=tmp_path, backend="parquet")
         db = sql.Database(
             name="parquet_store",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=parquet_store,
         )
         assert db.cache == parquet_store
-        assert db.cache.cache_store == tmp_path / db.cache.fmt
+        assert db.cache.cache_store == tmp_path / db.cache.serializer.fmt
+        assert db.cache.serializer == serializer.ParquetSerializer
 
     def test_instantiate_with_cache_store_as_joblib_store(
         self, mock_read_sql, tmp_path
     ):
-        joblib_store = store.JoblibStore(cache_store=tmp_path)
+        joblib_store = store.FileStore(cache_store=tmp_path, backend="joblib")
         db = sql.Database(
             name="joblib_store",
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
             cache_store=joblib_store,
         )
         assert db.cache == joblib_store
-        assert db.cache.cache_store == tmp_path / db.cache.fmt
+        assert db.cache.cache_store == tmp_path / db.cache.serializer.fmt
+        assert db.cache.serializer == serializer.JoblibSerializer
 
     def test_load_results_from_cache(self, mock_read_sql, db, query):
         """Test the cache fetches results from cache on a second call"""
@@ -288,7 +295,8 @@ class TestDBConnector:
             uri="sqlite:///file:path/to/database1a?mode=ro&uri=true",
         )
         assert (
-            db.cache.cache_store == Path(tmp_path) / ".cache" / db.name / db.cache.fmt
+            db.cache.cache_store
+            == Path(tmp_path) / ".cache" / db.name / db.cache.serializer.fmt
         )
         os.chdir(previous_wd)
 

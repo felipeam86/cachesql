@@ -7,83 +7,87 @@ from cachesql import store, utils
 
 
 class TestFileStore:
-    def test_get_cache_filepath(self, file_store, query):
-        with pytest.raises(NotImplementedError):
-            file_store.get_cache_filepath(query)
-
-    def test_load_results(self, file_store, query):
-        with pytest.raises(NotImplementedError):
-            file_store.load_results(query)
-
-    def test_dump_results(self, file_store, query, results):
-        with pytest.raises(NotImplementedError):
-            file_store.dump_results(query, results)
-
-
-class TestParquetStore:
     def test_init(self, tmp_path):
-        s = store.ParquetStore(cache_store=tmp_path)
+        s = store.FileStore(cache_store=tmp_path)
         assert s.cache_store.exists()
 
-    def test_get_filepaths(self, tmp_path, query):
+    def test_get_filepaths_parquet(self, tmp_path, query):
         """Test the metadata and results cache file"""
-        s = store.ParquetStore(cache_store=tmp_path)
+        s = store.FileStore(cache_store=tmp_path)
         metadata_file = s.get_metadata_filepath(query)
         cache_file = s.get_cache_filepath(query)
         assert metadata_file.stem == store.hash_query(query)
         assert cache_file.stem == store.hash_query(query)
-        assert metadata_file == tmp_path / s.fmt / (store.hash_query(query) + ".json")
-        assert cache_file == tmp_path / s.fmt / (store.hash_query(query) + ".parquet")
+        assert metadata_file == tmp_path / s.serializer.fmt / (
+            store.hash_query(query) + ".json"
+        )
+        assert cache_file == tmp_path / s.serializer.fmt / (
+            store.hash_query(query) + ".parquet"
+        )
 
-    def test_dump_load_metadata(self, parquet_store, query, metadata):
-        parquet_store.dump_metadata(query, metadata)
-        assert parquet_store.get_metadata_filepath(query).exists()
-        metadata_loaded = parquet_store.load_metadata(query)
+    def test_get_filepaths_joblib(self, tmp_path, query):
+        """Test the metadata and results cache file"""
+        s = store.FileStore(cache_store=tmp_path, backend="joblib")
+        metadata_file = s.get_metadata_filepath(query)
+        cache_file = s.get_cache_filepath(query)
+        assert metadata_file.stem == store.hash_query(query)
+        assert cache_file.stem == store.hash_query(query)
+        assert metadata_file == tmp_path / s.serializer.fmt / (
+            store.hash_query(query) + ".json"
+        )
+        assert cache_file == tmp_path / s.serializer.fmt / (
+            store.hash_query(query) + ".joblib"
+        )
+
+    def test_dump_load_metadata(self, file_store, query, metadata):
+        file_store.dump_metadata(query, metadata)
+        assert file_store.get_metadata_filepath(query).exists()
+        metadata_loaded = file_store.load_metadata(query)
         assert metadata == metadata_loaded
 
         assert metadata_loaded["query"] != query
         assert metadata_loaded["query"] == utils.normalize_query(query)
 
         with pytest.raises(ValueError) as excinfo:
-            parquet_store.load_metadata("select * from dummy")
+            file_store.load_metadata("select * from dummy")
         assert f"Metadata for the given query does not exist." in str(excinfo.value)
 
-    def test_dump_load_results(self, parquet_store, query, results):
-        parquet_store.dump_results(query, results)
-        assert parquet_store.get_cache_filepath(query).exists()
-        results_loaded = parquet_store.load_results(query)
+    def test_dump_load_results(self, file_store, query, results):
+        file_store.dump_results(query, results)
+        assert file_store.get_cache_filepath(query).exists()
+        results_loaded = file_store.load_results(query)
         assert results.equals(results_loaded)
 
         with pytest.raises(ValueError) as excinfo:
-            parquet_store.load_results("select * from dummy")
+            file_store.load_results("select * from dummy")
         assert f"Cached results for the given query do not exist." in str(excinfo.value)
 
-    def test_dump_load(self, parquet_store, query, results, metadata):
-        parquet_store.dump(query, results, metadata)
-        assert parquet_store.get_cache_filepath(query).exists()
-        assert parquet_store.get_metadata_filepath(query).exists()
-        results_loaded, metadata_loaded = parquet_store.load(query)
+    def test_dump_load(self, file_store, query, results, metadata):
+        file_store.dump(query, results, metadata)
+        assert file_store.get_cache_filepath(query).exists()
+        assert file_store.get_metadata_filepath(query).exists()
+        results_loaded, metadata_loaded = file_store.load(query)
         assert results.equals(results_loaded)
         assert metadata == metadata_loaded
 
         with pytest.raises(ValueError) as excinfo:
-            parquet_store.load("select * from dummy")
+            file_store.load("select * from dummy")
         assert f"Cached results for the given query do not exist." in str(excinfo.value)
 
-    def test_exists_in_cache(self, parquet_store, query, metadata, results):
+    def test_exists_in_cache(self, file_store, query, metadata, results):
         """Test the function that asserts if there is cache for a given string"""
-        assert not parquet_store.get_metadata_filepath(query).exists()
-        assert not parquet_store.get_cache_filepath(query).exists()
-        assert not parquet_store.exists(query)
+        assert not file_store.get_metadata_filepath(query).exists()
+        assert not file_store.get_cache_filepath(query).exists()
+        assert not file_store.exists(query)
 
-        parquet_store.dump(query, results, metadata)
+        file_store.dump(query, results, metadata)
 
-        assert parquet_store.get_metadata_filepath(query).exists()
-        assert parquet_store.get_cache_filepath(query).exists()
-        assert parquet_store.exists(query)
+        assert file_store.get_metadata_filepath(query).exists()
+        assert file_store.get_cache_filepath(query).exists()
+        assert file_store.exists(query)
 
-    def test_list_empty_store(self, parquet_store):
-        store_content = parquet_store.list()
+    def test_list_empty_store(self, file_store):
+        store_content = file_store.list()
         assert store_content.shape == (0, 4)
         assert list(store_content.columns) == [
             "query",
@@ -92,9 +96,9 @@ class TestParquetStore:
             "duration",
         ]
 
-    def test_list_store_with_one_element(self, parquet_store, query, metadata, results):
-        parquet_store.dump(query, results, metadata)
-        store_content = parquet_store.list()
+    def test_list_store_with_one_element(self, file_store, query, metadata, results):
+        file_store.dump(query, results, metadata)
+        store_content = file_store.list()
         assert store_content.shape == (1, 4)
         assert list(store_content.columns) == [
             "query",
@@ -104,7 +108,7 @@ class TestParquetStore:
         ]
         assert (
             store_content.loc[0, "cache_file"]
-            == parquet_store.get_cache_filepath(query).name
+            == file_store.get_cache_filepath(query).name
         )
         assert store_content.loc[0, "query"] == utils.normalize_query(query)
 
@@ -113,8 +117,8 @@ class TestParquetStore:
         cache_store2 = tmp_path / "cache2"
         cache_export_file = tmp_path / "cache.zip"
 
-        store1 = store.ParquetStore(cache_store=cache_store1)
-        store2 = store.ParquetStore(cache_store=cache_store2)
+        store1 = store.FileStore(cache_store=cache_store1)
+        store2 = store.FileStore(cache_store=cache_store2)
 
         store1.dump(query, results, metadata)
 
@@ -137,8 +141,8 @@ class TestParquetStore:
         cache_store2 = tmp_path / "cache2"
         cache_export_file = tmp_path / "cache.zip"
 
-        store1 = store.ParquetStore(cache_store=cache_store1)
-        store2 = store.ParquetStore(cache_store=cache_store2)
+        store1 = store.FileStore(cache_store=cache_store1)
+        store2 = store.FileStore(cache_store=cache_store2)
         for query in queries:
             store1.dump(query, results, metadata)
 
@@ -157,7 +161,7 @@ class TestParquetStore:
 
         assert utils.normalize_query(query1) == utils.normalize_query(query2)
 
-        parquet_store = store.ParquetStore(cache_store=tmp_path, normalize=True)
+        parquet_store = store.FileStore(cache_store=tmp_path, normalize=True)
 
         for query in (query1, query2):
             assert not parquet_store.get_metadata_filepath(query).exists()
@@ -171,33 +175,11 @@ class TestParquetStore:
             assert parquet_store.get_cache_filepath(query).exists()
             assert parquet_store.exists(query)
 
-    def test_invalid_arrow_type(self, parquet_store, query):
+    def test_invalid_arrow_type(self, file_store, query):
         results = pd.Series([uuid1() for i in range(3)], name="uuid_col").to_frame()
         with pytest.raises(ValueError) as excinfo:
-            parquet_store.dump_results(query, results)
+            file_store.dump_results(query, results)
         assert "Database(uri='...', store_backend='joblib')" in str(excinfo.value)
-
-
-class TestJoblibStore:
-    def test_get_filepaths(self, tmp_path, query):
-        """Test the metadata and results cache file"""
-        s = store.JoblibStore(cache_store=tmp_path)
-        metadata_file = s.get_metadata_filepath(query)
-        cache_file = s.get_cache_filepath(query)
-        assert metadata_file.stem == store.hash_query(query)
-        assert cache_file.stem == store.hash_query(query)
-        assert metadata_file == tmp_path / s.fmt / (store.hash_query(query) + ".json")
-        assert cache_file == tmp_path / s.fmt / (store.hash_query(query) + ".joblib")
-
-    def test_dump_load_results(self, joblib_store, query, results):
-        joblib_store.dump_results(query, results)
-        assert joblib_store.get_cache_filepath(query).exists()
-        results_loaded = joblib_store.load_results(query)
-        assert results.equals(results_loaded)
-
-        with pytest.raises(ValueError) as excinfo:
-            joblib_store.load_results("select * from dummy")
-        assert f"Cached results for the given query do not exist." in str(excinfo.value)
 
 
 class TestHashQuery:
