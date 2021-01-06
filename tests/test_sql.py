@@ -37,7 +37,7 @@ class TestDBConnector:
         assert (
             db.cache.cache_store == Path("/tmp/str_as_cache") / db.cache.serializer.fmt
         )
-        assert db.cache.serializer == serializer.ParquetSerializer
+        assert isinstance(db.cache.serializer, serializer.ParquetSerializer)
 
     def test_instantiate_with_cache_store_as_path(self, mock_read_sql, tmp_path):
         db = sql.Database(
@@ -48,7 +48,7 @@ class TestDBConnector:
         assert (
             db.cache.cache_store == tmp_path / "path_as_cache" / db.cache.serializer.fmt
         )
-        assert db.cache.serializer == serializer.ParquetSerializer
+        assert isinstance(db.cache.serializer, serializer.ParquetSerializer)
 
     def test_instantiate_with_cache_store_as_none(self, mock_read_sql, tmp_path):
         previous_wd = os.getcwd()
@@ -63,7 +63,7 @@ class TestDBConnector:
             db.cache.cache_store
             == tmp_path / ".cache" / "none_as_cache" / db.cache.serializer.fmt
         )
-        assert db.cache.serializer == serializer.ParquetSerializer
+        assert isinstance(db.cache.serializer, serializer.ParquetSerializer)
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_joblib(self, mock_read_sql, tmp_path):
@@ -80,7 +80,7 @@ class TestDBConnector:
             db.cache.cache_store
             == tmp_path / ".cache" / "store_backend_joblib" / db.cache.serializer.fmt
         )
-        assert db.cache.serializer == serializer.JoblibSerializer
+        assert isinstance(db.cache.serializer, serializer.JoblibSerializer)
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_wrong(self, mock_read_sql, tmp_path):
@@ -105,7 +105,7 @@ class TestDBConnector:
         )
         assert db.cache == parquet_store
         assert db.cache.cache_store == tmp_path / db.cache.serializer.fmt
-        assert db.cache.serializer == serializer.ParquetSerializer
+        assert isinstance(db.cache.serializer, serializer.ParquetSerializer)
 
     def test_instantiate_with_cache_store_as_joblib_store(
         self, mock_read_sql, tmp_path
@@ -118,7 +118,7 @@ class TestDBConnector:
         )
         assert db.cache == joblib_store
         assert db.cache.cache_store == tmp_path / db.cache.serializer.fmt
-        assert db.cache.serializer == serializer.JoblibSerializer
+        assert isinstance(db.cache.serializer, serializer.JoblibSerializer)
 
     def test_load_results_from_cache(self, mock_read_sql, db, query):
         """Test the cache fetches results from cache on a second call"""

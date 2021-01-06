@@ -16,17 +16,19 @@ class ParquetSerializer(BaseSerializer):
     fmt = "parquet"
     extension = ".parquet"
 
+    def __init__(self, compression="snappy"):
+        self.compression = compression
+
     @classmethod
     def load(cls, filepath: Union[str, Path]) -> pd.DataFrame:
         """Load dataframe from parquet file."""
         return pd.read_parquet(filepath)
 
-    @classmethod
-    def dump(cls, results: pd.DataFrame, filepath: Union[str, Path]) -> None:
+    def dump(self, results: pd.DataFrame, filepath: Union[str, Path]) -> None:
         """Dump dataframe to parquet file."""
         try:
-            results.to_parquet(filepath)
-        except pa.ArrowInvalid as e:
+            results.to_parquet(filepath, compression=self.compression)
+        except pa.ArrowInvalid:
             raise ValueError(
                 "It seems that your query is returning a column with a type not "
                 "yet supported by Arrow. Consider using 'joblib' instead: "
@@ -39,12 +41,14 @@ class JoblibSerializer(BaseSerializer):
     fmt = "joblib"
     extension = ".joblib"
 
+    def __init__(self, compression=0):
+        self.compression = compression
+
     @classmethod
     def load(cls, filepath: Union[str, Path]) -> pd.DataFrame:
         """Load dataframe from file dumped with joblib."""
         return joblib.load(filepath)
 
-    @classmethod
-    def dump(cls, results: pd.DataFrame, filepath: Union[str, Path]) -> None:
+    def dump(self, results: pd.DataFrame, filepath: Union[str, Path]) -> None:
         """Dump dataframe with joblib."""
-        joblib.dump(results, filepath)
+        joblib.dump(results, filepath, compress=self.compression, protocol=4)

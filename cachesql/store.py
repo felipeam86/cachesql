@@ -45,7 +45,7 @@ class FileStore(BaseStore):
             raise ValueError(
                 f"store_backend={backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
             )
-        self.serializer = self._serializers[backend]
+        self.serializer = self._serializers[backend]()
         self.cache_store = Path(cache_store).expanduser() / self.serializer.fmt
         self.cache_store.mkdir(parents=True, exist_ok=True)
         self.normalize = normalize
