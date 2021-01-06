@@ -12,6 +12,13 @@ class BaseSerializer:
 
 
 class ParquetSerializer(BaseSerializer):
+    """A serializer of pd.DataFrame to parquet format.
+
+    Parameters
+    ----------
+    compression : {'snappy', 'gzip', 'brotli', None}, default 'snappy'
+        Name of the compression to use. See pd.DataFrame.to_parquet docs
+    """
 
     fmt = "parquet"
     extension = ".parquet"
@@ -37,6 +44,14 @@ class ParquetSerializer(BaseSerializer):
 
 
 class JoblibSerializer(BaseSerializer):
+    """A serializer of pd.DataFrame based on joblib.
+
+    Parameters
+    ----------
+    compression
+        Optional compression level for the data. Passed to parameter
+        'compress' of joblib.dump. See joblib docs
+    """
 
     fmt = "joblib"
     extension = ".joblib"

@@ -23,14 +23,15 @@ class BaseStore:
 
 
 class FileStore(BaseStore):
-    """Base class for disk stores.
+    """Flat file store.
 
     Parameters
     ----------
     cache_store
-        Location where the returned values are cached.
+        Root path where the cached files are stored.
     normalize
-        If True, normalize the queries to make the cache independent from formatting changes
+        If True, normalize the queries to make the cache independent from
+        formatting changes. Normalization is done with the sqlparse library.
     """
 
     _serializers = {
