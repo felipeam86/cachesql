@@ -10,7 +10,7 @@ The key features are:
 
 - **Speed up development cycles**: Run your queries the first time against the database, get it from cache the next times.
   You no longer need to wait for your queries anymore.
-- **Resilience**: If you loose access to the databases, you can rely on your cached results to run your code.
+- **Resilience**: If you lose access to the databases, you can rely on your cached results to run your code.
 - **Reproducibility**: By freezing the state of your queries results in cache, you guarantee reproducibility of your code.
 - **Simplify collaboration**: By sharing the state of your cache with colleagues, you can guarantee they will get the
   same results as you.
@@ -50,7 +50,7 @@ INFO:cachesql.sql:Loading from cache. #  <--- When you run it again, it will get
 INFO:cachesql.sql:The cached query was executed on the 2021-01-03T20:06:21.401556 and lasted 0:23:04.005710s
 ```
 
-Phew... that was fast! Although I know that there's new data on the DB, I want fresh data! -->
+Phew... that was fast! Although, I know now that there's new data on the DB so I want fresh data! -->
 Use the `force=True` flag:
 
 ```python
@@ -61,7 +61,7 @@ INFO:cachesql.sql:Results have been stored in cache
 ```
 
 Perfect, now that my report is ready to go in production, I wan't to run this once a day without
-unnecessarily wasting disk space with cache -->  Use the `cache=False`flag:
+unnecessarily wasting disk space with cache -->  Use the `cache=False` flag:
 
 ```python
 >>> df = db.query(expensive_query, cache=False) #  <--- For production ready code, you can turn off the cache
@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
 ```
 
-Supose the previous code is stored on `report.py`. You can either import `get_data` in other modules
+Suppose the previous code is stored on `report.py`. You can either import `get_data` in other modules
 and control cache with `force` and `cache`parameters, or you can run the report on top of your
 jupyter notebook with the magic command
 [%run](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-run) 
@@ -196,7 +196,7 @@ to populate your environment with the required data:
 ```
 
 Once you have finalized your development cycles and `report.py` has the complete logic for generating
-your report, you can run it in production withouth cache as follows:
+your report, you can run it in production without cache as follows:
 
 
 ```bash
@@ -207,6 +207,6 @@ $ python report.py --no-cache
 ## Acknowledgements
 This package was proudly developed at the [Rwanda Revenue Authority](https://www.rra.gov.rw/) which
 kindly agreed to let me open source it. The internal version has been serving a growing team of data
-scientists since 2018. It has been a pilar of our infrastructure to guarantee fast development
+scientists since 2018. It has been a pillar of our infrastructure to guarantee fast development
 cycles, resilient workflow to infrastructure issues, reproducibility of our analysis and simplified
 collaboration by sharing cache state among colleagues.
