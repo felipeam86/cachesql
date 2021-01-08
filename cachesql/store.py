@@ -1,7 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import Iterable, Tuple, Union
+from typing import Any, Iterable, Tuple, Union
 from zipfile import ZipFile
 
 import pandas as pd
@@ -32,6 +32,9 @@ class FileStore(BaseStore):
     normalize
         If True, normalize the queries to make the cache independent from
         formatting changes. Normalization is done with the sqlparse library.
+    compression
+        Optional compression parameter to be passed to the serializer.
+
     """
 
     _serializers = {
@@ -40,13 +43,17 @@ class FileStore(BaseStore):
     }
 
     def __init__(
-        self, cache_store: Path, backend: str = "parquet", normalize: bool = False
+        self,
+        cache_store: Path,
+        backend: str = "parquet",
+        normalize: bool = False,
+        compression: Any = None,
     ) -> None:
         if backend not in self._serializers:
             raise ValueError(
                 f"store_backend={backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
             )
-        self.serializer = self._serializers[backend]()
+        self.serializer = self._serializers[backend](compression=compression)
         self.cache_store = Path(cache_store).expanduser() / self.serializer.fmt
         self.cache_store.mkdir(parents=True, exist_ok=True)
         self.normalize = normalize

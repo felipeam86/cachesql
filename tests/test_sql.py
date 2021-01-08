@@ -64,6 +64,7 @@ class TestDBConnector:
             == tmp_path / ".cache" / "none_as_cache" / db.cache.serializer.fmt
         )
         assert isinstance(db.cache.serializer, serializer.ParquetSerializer)
+        assert db.cache.serializer.compression == "snappy"
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_joblib(self, mock_read_sql, tmp_path):
@@ -81,6 +82,7 @@ class TestDBConnector:
             == tmp_path / ".cache" / "store_backend_joblib" / db.cache.serializer.fmt
         )
         assert isinstance(db.cache.serializer, serializer.JoblibSerializer)
+        assert db.cache.serializer.compression == 0
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_wrong(self, mock_read_sql, tmp_path):

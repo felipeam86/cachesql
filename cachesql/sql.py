@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -32,6 +32,8 @@ class Database:
         determines if it uses 'parquet' or 'joblib as backend
     normalize
         If True, normalize the queries to make the cache independent from formatting changes
+    compression
+        Optional compression parameter to be passed to the serializer.
     """
 
     def __init__(
@@ -41,6 +43,7 @@ class Database:
         cache_store: Union[str, Path, store.BaseStore] = None,
         store_backend: str = "parquet",
         normalize: bool = True,
+        compression: Any = None,
     ):
         self.engine = create_engine(uri)
         self.name = name or self.engine.url.database or "unnameddb"
@@ -51,6 +54,7 @@ class Database:
                 cache_store=Path(cache_store),
                 backend=store_backend,
                 normalize=normalize,
+                compression=compression,
             )
 
         elif isinstance(cache_store, store.BaseStore):

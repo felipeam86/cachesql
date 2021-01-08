@@ -3,12 +3,24 @@ from uuid import uuid1
 import pandas as pd
 import pytest
 
-from cachesql import store, utils
+from cachesql import store, utils, serializer
 
 
 class TestFileStore:
     def test_init(self, tmp_path):
         s = store.FileStore(cache_store=tmp_path)
+        assert s.cache_store.exists()
+
+    def test_init_parquet(self, tmp_path):
+        s = store.FileStore(cache_store=tmp_path, backend="parquet")
+        assert isinstance(s.serializer, serializer.ParquetSerializer)
+        s.serializer.compression == "snappy"
+        assert s.cache_store.exists()
+
+    def test_init_joblib(self, tmp_path):
+        s = store.FileStore(cache_store=tmp_path, backend="joblib")
+        assert isinstance(s.serializer, serializer.JoblibSerializer)
+        s.serializer.compression == 0
         assert s.cache_store.exists()
 
     def test_get_filepaths_parquet(self, tmp_path, query):

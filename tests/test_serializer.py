@@ -7,6 +7,10 @@ from cachesql import serializer
 
 
 class TestParquetSerializer:
+    def test_init_compression_is_none(self):
+        s = serializer.ParquetSerializer()
+        assert s.compression == "snappy"
+
     def test_dump_load_results(self, tmp_path, results):
         s = serializer.ParquetSerializer()
         s.dump(results, tmp_path / "file.parquet")
@@ -23,6 +27,10 @@ class TestParquetSerializer:
 
 
 class TestJoblibSerializer:
+    def test_init_compression_is_none(self):
+        s = serializer.JoblibSerializer()
+        assert s.compression == 0
+
     def test_dump_load_results(self, tmp_path, results):
         s = serializer.JoblibSerializer()
         s.dump(results, tmp_path / "file.parquet")

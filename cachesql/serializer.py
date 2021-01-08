@@ -23,8 +23,8 @@ class ParquetSerializer(BaseSerializer):
     fmt = "parquet"
     extension = ".parquet"
 
-    def __init__(self, compression="snappy"):
-        self.compression = compression
+    def __init__(self, compression=None):
+        self.compression = compression or "snappy"
 
     @classmethod
     def load(cls, filepath: Union[str, Path]) -> pd.DataFrame:
@@ -56,8 +56,8 @@ class JoblibSerializer(BaseSerializer):
     fmt = "joblib"
     extension = ".joblib"
 
-    def __init__(self, compression=0):
-        self.compression = compression
+    def __init__(self, compression=None):
+        self.compression = compression or 0
 
     @classmethod
     def load(cls, filepath: Union[str, Path]) -> pd.DataFrame:
