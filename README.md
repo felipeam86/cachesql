@@ -28,56 +28,58 @@ Install with pip
 pip install cachesql
 ```
 
+**NOTE**: By default `cachesql` has logging disabled. This is to allow the user to choose within
+their own environment how and when to log messages. If you want to see the log messages as in the
+following examples, add this lines on top of your code:
+
+
+```python
+import logging
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+```
+
+
 
 Run your queries once, get them from cache the next time!
 
-```python
+```pycon
 >>> from cachesql import Database
 >>> db = Database(uri="postgresql://user:password@localhost:5432/mydatabase")
 >>> expensive_query = "SELECT * FROM table WHERE {conditions}" #  <--- Imagine this is a very long and expensive query.
 >>> df = db.query(expensive_query)
-INFO:cachesql.sql:Querying 'mydatabase'
-INFO:cachesql.sql:Finished in 0:23:04.005710s
-INFO:cachesql.sql:Results have been stored in cache
+Querying 'mydatabase'
+Finished in 0:23:04.005710s
+Results have been stored in cache
 ```
 
 Ok, that took 23 minutes, but I need to run my code again from scratch!
 
-```python
+```pycon
 >>> df = db.query(expensive_query)
-INFO:cachesql.sql:Querying 'mydatabase'
-INFO:cachesql.sql:Loading from cache. #  <--- When you run it again, it will get the data from cache
-INFO:cachesql.sql:The cached query was executed on the 2021-01-03T20:06:21.401556 and lasted 0:23:04.005710s
+Querying 'mydatabase'
+Loading from cache. #  <--- When you run it again, it will get the data from cache
+The cached query was executed on the 2021-01-03T20:06:21.401556 and lasted 0:23:04.005710s
 ```
 
 Phew... that was fast! Although, I know now that there's new data on the DB so I want fresh data! -->
 Use the `force=True` flag:
 
-```python
+```pycon
 >>> df = db.query(expensive_query, force=True) #  <--- force=True will tell cachesql to refresh the cache.
-INFO:cachesql.sql:Querying 'mydatabase'
-INFO:cachesql.sql:Finished in 0:23:10.023650s
-INFO:cachesql.sql:Results have been stored in cache
+Querying 'mydatabase'
+Finished in 0:23:10.023650s
+Results have been stored in cache
 ```
 
 Perfect, now that my report is ready to go in production, I wan't to run this once a day without
 unnecessarily wasting disk space with cache -->  Use the `cache=False` flag:
 
-```python
+```pycon
 >>> df = db.query(expensive_query, cache=False) #  <--- For production ready code, you can turn off the cache
-INFO:cachesql.sql:Querying 'mydatabase'
-INFO:cachesql.sql:Finished in 0:22:43.031210s
+Querying 'mydatabase'
+Finished in 0:22:43.031210s
 ```
 You got your data and nothing is saved to cache!
-
-**NOTE**: By default `cachesql` has logging disabled. This is to allow the user to choose within
-their own environment how and when to log messages. If you want to see the log messages as in the
-previous examples, add this line on top of your code:
-
-```python
-import logging
-logging.basicConfig(level=logging.INFO)
-```
 
 
 
