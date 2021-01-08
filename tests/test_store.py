@@ -3,7 +3,7 @@ from uuid import uuid1
 import pandas as pd
 import pytest
 
-from cachesql import store, utils, serializer
+from cachesql import serializer, store, utils
 
 
 class TestFileStore:
