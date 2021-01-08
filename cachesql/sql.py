@@ -2,13 +2,12 @@ import logging
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 import pandas as pd
 from sqlalchemy import create_engine
 
-from . import __version__
-from .store import BaseStore, ParquetStore
+from . import __version__, store
 
 logger = logging.getLogger(__name__)
 
@@ -27,28 +26,38 @@ class Database:
         Name of the database used as namespace for the cache and mentioned on log messages.
         If None, it will try to infer a name from the uri, otherwise it'll be set to unnameddb
     cache_store
-        Path where cache should be stored or instance of derived class of BaseStore
+        Path where cache should be stored or instance of derived class of store.BaseStore
+    store_backend : {'parquet', 'joblib'}
+        When cache_store is a str or Path, a FileStore is used for the cache. This parameter
+        determines if it uses 'parquet' or 'joblib as backend
     normalize
         If True, normalize the queries to make the cache independent from formatting changes
+    compression
+        Optional compression parameter to be passed to the serializer.
     """
 
     def __init__(
         self,
         uri: str,
         name: str = None,
-        cache_store: Union[str, Path, BaseStore] = None,
+        cache_store: Union[str, Path, store.BaseStore] = None,
+        store_backend: str = "parquet",
         normalize: bool = True,
+        compression: Any = None,
     ):
         self.engine = create_engine(uri)
         self.name = name or self.engine.url.database or "unnameddb"
 
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
             cache_store = Path(cache_store or ".cache").absolute() / self.name
-            self.cache = ParquetStore(
+            self.cache = store.FileStore(
                 cache_store=Path(cache_store),
+                backend=store_backend,
                 normalize=normalize,
+                compression=compression,
             )
-        elif isinstance(cache_store, BaseStore):
+
+        elif isinstance(cache_store, store.BaseStore):
             self.cache = cache_store
 
         self.session = set()

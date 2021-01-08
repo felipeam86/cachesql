@@ -40,5 +40,5 @@ def results():
 
 
 @pytest.fixture
-def parquet_store(tmp_path):
-    return store.ParquetStore(cache_store=tmp_path, normalize=True)
+def file_store(tmp_path):
+    return store.FileStore(cache_store=tmp_path, normalize=True)

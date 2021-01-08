@@ -1,11 +1,12 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import Iterable, Tuple, Union
+from typing import Any, Iterable, Tuple, Union
 from zipfile import ZipFile
 
 import pandas as pd
 
+from . import serializer
 from .utils import normalize_query
 
 
@@ -21,19 +22,39 @@ class BaseStore:
     pass
 
 
-class ParquetStore(BaseStore):
-    """Disk store based on parquet files.
+class FileStore(BaseStore):
+    """Flat file store.
 
     Parameters
     ----------
     cache_store
-        Location where the returned values are cached.
+        Root path where the cached files are stored.
     normalize
-        If True, normalize the queries to make the cache independent from formatting changes
+        If True, normalize the queries to make the cache independent from
+        formatting changes. Normalization is done with the sqlparse library.
+    compression
+        Optional compression parameter to be passed to the serializer.
+
     """
 
-    def __init__(self, cache_store: Path, normalize: bool = False) -> None:
-        self.cache_store = Path(cache_store).expanduser()
+    _serializers = {
+        "parquet": serializer.ParquetSerializer,
+        "joblib": serializer.JoblibSerializer,
+    }
+
+    def __init__(
+        self,
+        cache_store: Path,
+        backend: str = "parquet",
+        normalize: bool = False,
+        compression: Any = None,
+    ) -> None:
+        if backend not in self._serializers:
+            raise ValueError(
+                f"store_backend={backend!r} is invalid. Choose one of {'parquet', 'joblib'}"
+            )
+        self.serializer = self._serializers[backend](compression=compression)
+        self.cache_store = Path(cache_store).expanduser() / self.serializer.fmt
         self.cache_store.mkdir(parents=True, exist_ok=True)
         self.normalize = normalize
 
@@ -51,7 +72,7 @@ class ParquetStore(BaseStore):
     def get_cache_filepath(self, query: str) -> Path:
         """Return the cached results filepath corresponding to that query."""
         arg_hash = hash_query(query, normalize=self.normalize)
-        return self.cache_store / (arg_hash + ".parquet")
+        return self.cache_store / (arg_hash + self.serializer.extension)
 
     def load_metadata(self, query: str) -> dict:
         """Load metadata of cached results for query if it exists in cache."""
@@ -65,7 +86,7 @@ class ParquetStore(BaseStore):
         """Load cached results for query if it exists in cache."""
         cache_file = self.get_cache_filepath(query)
         if cache_file.exists():
-            return pd.read_parquet(cache_file)
+            return self.serializer.load(cache_file)
         else:
             raise ValueError("Cached results for the given query do not exist.")
 
@@ -83,7 +104,7 @@ class ParquetStore(BaseStore):
     def dump_results(self, query: str, results: pd.DataFrame) -> None:
         """Dump query results to cache."""
         cache_file = self.get_cache_filepath(query)
-        results.to_parquet(cache_file)
+        self.serializer.dump(results, cache_file)
 
     def dump(self, query: str, results: pd.DataFrame, metadata: dict) -> None:
         """Dump results and metadata for given query to cache."""
