@@ -1,0 +1,68 @@
+image: felipeam86/rrasql:0.10.0
+
+stages:
+  - build
+  - test
+
+
+variables:
+  PIP_CACHE_DIR: $CI_PROJECT_DIR/.pip
+
+
+cache:
+  paths:
+    - .pip
+
+
+.restrictions:
+  only:
+    - tags
+    - web
+    - merge_requests
+
+
+compile_requirements:
+  extends: .restrictions
+  cache: {}
+  stage: build
+  script:
+    - poetry export --without-hashes --dev -f requirements.txt -o requirements.txt
+  artifacts:
+    name: requirements.txt
+    expose_as: requirements
+    paths:
+      - requirements.txt
+    expire_in: never
+
+
+tests:
+  extends: .restrictions
+  stage: test
+  needs: ["compile_requirements"]
+  before_script:
+    - pip install -r requirements.txt
+  script:
+    - py.test --cov-report term-missing --cov=cachesql tests/
+    - coverage xml -o cobertura-coverage.xml
+  artifacts:
+    reports:
+      cobertura: cobertura-coverage.xml
+
+
+black:
+  extends: .restrictions
+  cache: {}
+  stage: test
+  needs: []
+  script:
+    - black --diff --check .
+
+
+isort:
+  extends: .restrictions
+  stage: test
+  needs: ["compile_requirements"]
+  before_script:
+    - pip install -r requirements.txt
+  script:
+    - isort --profile black --diff --check-only .

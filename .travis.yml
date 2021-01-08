@@ -1,0 +1,17 @@
+language: python
+
+cache: pip
+
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+
+before_install:
+  - pip install poetry
+install:
+  - poetry install
+script:
+  - poetry run pytest --cov-report term-missing --cov=cachesql tests/
+after_success:
+  - coveralls
