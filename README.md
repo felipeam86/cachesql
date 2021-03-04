@@ -30,7 +30,7 @@ pip install cachesql
 
 **NOTE**: By default `cachesql` has logging disabled. This is to allow the user to choose within
 their own environment how and when to log messages. If you want to see the log messages as in the
-following examples, add this lines on top of your code:
+following examples, add these lines on top of your code:
 
 
 ```python
