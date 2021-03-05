@@ -61,7 +61,7 @@ Loading from cache. #  <--- When you run it again, it will get the data from cac
 The cached query was executed on the 2021-01-03T20:06:21.401556 and lasted 0:23:04.005710s
 ```
 
-Phew... that was fast! Although, I know now that there's new data on the DB so I want fresh data! -->
+Phew... that was fast! Although, I know now that there's new data on the DB, so I want fresh data! -->
 Use the `force=True` flag:
 
 ```pycon
@@ -71,7 +71,7 @@ Finished in 0:23:10.023650s
 Results have been stored in cache
 ```
 
-Perfect, now that my report is ready to go in production, I wan't to run this once a day without
+Perfect, now that my report is ready to go in production, I want to run this once a day without
 unnecessarily wasting disk space with cache -->  Use the `cache=False` flag:
 
 ```pycon
@@ -96,9 +96,9 @@ initial data. This poses several problems:
    as much as possible.
 2. We don't want to overload our databases with the same query several times. We don't always have
    the luxury to have dedicated DBs for data analysis and sometimes have to query production DBs.
-   I know, it sucks... but that's life and we want to keep a helthy relationship with whomever is
+   I know, it sucks... but that's life, and we want to keep a healthy relationship with whomever is
    in charge of the DBs.
-3. Let's face it, we don't all work in perfect environments, infrastructure sometimes fail and we
+3. Let's face it, we don't all work in perfect environments, infrastructure sometimes fail, and we
    loose access to the databases.
 
 
