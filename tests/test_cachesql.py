@@ -4,7 +4,7 @@ from cachesql import Database, __version__
 
 
 def test_version():
-    assert __version__ == "0.2.0"
+    assert __version__ == "0.2.1"
 
 
 def test_load_results_from_cache(query, tmp_path):
