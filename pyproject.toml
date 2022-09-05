@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cachesql"
-version = "0.2.1"
+version = "0.2.2"
 description = "Fast, resilient and reproducible data analysis with cached SQL queries"
 authors = ["Felipe Aguirre Martinez <felipeam86@gmail.com>"]
 homepage = "https://github.com/felipeam86/cachesql"
