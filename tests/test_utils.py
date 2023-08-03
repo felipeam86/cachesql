@@ -74,10 +74,10 @@ class TestCache:
     def test_normalize_query_with_tabs(self):
         query1 = """
         select top 1
-        	tin,
-        	Journal
+            tin,
+            Journal
         from
-        	Receipts
+            Receipts
         """
         query2 = """
         select top 1

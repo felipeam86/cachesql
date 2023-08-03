@@ -4,7 +4,7 @@ from cachesql import Database, __version__
 
 
 def test_version():
-    assert __version__ == "0.2.2"
+    assert __version__ == "0.3.0"
 
 
 def test_load_results_from_cache(query, tmp_path):
@@ -19,5 +19,5 @@ def test_load_results_from_cache(query, tmp_path):
         assert (
             mock_query.call_count == 0
         ), "'Database._query' should not have been called up to this point"
-        df = db.query(query=query)
+        db.query(query=query)
         assert mock_query.call_count == 1, "'Database._query' should have been invoked"

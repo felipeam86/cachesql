@@ -86,7 +86,6 @@ class TestDBConnector:
         os.chdir(previous_wd)
 
     def test_instantiate_with_store_backend_wrong(self, mock_read_sql, tmp_path):
-
         with pytest.raises(ValueError) as excinfo:
             _ = sql.Database(
                 name="store_backend_wrong",
