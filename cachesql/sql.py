@@ -34,6 +34,8 @@ class Database:
         If True, normalize the queries to make the cache independent from formatting changes
     compression
         Optional compression parameter to be passed to the serializer.
+     **kwargs
+        additional kwargs to be passed to the sqlalchemy.create_engine method
     """
 
     def __init__(
@@ -44,8 +46,11 @@ class Database:
         store_backend: str = "parquet",
         normalize: bool = True,
         compression: Any = None,
+        **kwargs
     ):
-        self.engine = create_engine(uri)
+        self.__dict__.update(**kwargs)
+        self.kwargs = kwargs
+        self.engine = create_engine(uri, **self.kwargs)
         self.name = name or self.engine.url.database or "unnameddb"
 
         if (cache_store is None) or isinstance(cache_store, (str, Path)):
