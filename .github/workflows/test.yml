@@ -33,7 +33,7 @@ jobs:
         python -m pip install --upgrade poetry coveralls
         poetry install
     - name: Test with pytest
-      if: matrix.os != windows-latest
+      if: matrix.os != 'windows-latest'
       run: |
         poetry run pytest --cov-report term-missing --cov=cachesql tests/
     - name: Publish coverage to Coveralls
