@@ -86,7 +86,7 @@ class Database:
         """
         logger.info(f"Querying {self.name!r}")
         if self.cache.exists(query) and not (force or not cache):
-            logger.info(f"Loading from cache.")
+            logger.info("Loading from cache.")
             results, metadata = self.cache.load(query)
             logger.info(
                 f"The cached query was executed on the {metadata['executed_at']} "
@@ -108,7 +108,7 @@ class Database:
                     "duration": duration,
                 }
                 self.cache.dump(query, results, metadata)
-                logger.info(f"Results have been stored in cache")
+                logger.info("Results have been stored in cache")
 
         self.session.add(query)
         return results

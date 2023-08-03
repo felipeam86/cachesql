@@ -62,7 +62,7 @@ class TestFileStore:
 
         with pytest.raises(ValueError) as excinfo:
             file_store.load_metadata("select * from dummy")
-        assert f"Metadata for the given query does not exist." in str(excinfo.value)
+        assert "Metadata for the given query does not exist." in str(excinfo.value)
 
     def test_dump_load_results(self, file_store, query, results):
         file_store.dump_results(query, results)
@@ -72,7 +72,7 @@ class TestFileStore:
 
         with pytest.raises(ValueError) as excinfo:
             file_store.load_results("select * from dummy")
-        assert f"Cached results for the given query do not exist." in str(excinfo.value)
+        assert "Cached results for the given query do not exist." in str(excinfo.value)
 
     def test_dump_load(self, file_store, query, results, metadata):
         file_store.dump(query, results, metadata)
@@ -84,7 +84,7 @@ class TestFileStore:
 
         with pytest.raises(ValueError) as excinfo:
             file_store.load("select * from dummy")
-        assert f"Cached results for the given query do not exist." in str(excinfo.value)
+        assert "Cached results for the given query do not exist." in str(excinfo.value)
 
     def test_exists_in_cache(self, file_store, query, metadata, results):
         """Test the function that asserts if there is cache for a given string"""

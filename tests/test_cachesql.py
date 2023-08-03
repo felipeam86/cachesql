@@ -19,5 +19,5 @@ def test_load_results_from_cache(query, tmp_path):
         assert (
             mock_query.call_count == 0
         ), "'Database._query' should not have been called up to this point"
-        df = db.query(query=query)
+        db.query(query=query)
         assert mock_query.call_count == 1, "'Database._query' should have been invoked"
