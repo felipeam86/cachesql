@@ -34,7 +34,7 @@ class Database:
         If True, normalize the queries to make the cache independent from formatting changes
     compression
         Optional compression parameter to be passed to the serializer.
-     **kwargs
+    **kwargs
         additional kwargs to be passed to the sqlalchemy.create_engine method
     """
 
@@ -46,7 +46,7 @@ class Database:
         store_backend: str = "parquet",
         normalize: bool = True,
         compression: Any = None,
-        **kwargs
+        **kwargs,
     ):
         self.__dict__.update(**kwargs)
         self.kwargs = kwargs
